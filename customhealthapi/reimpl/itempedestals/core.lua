@@ -61,13 +61,22 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 			end
 			
 			local updatingPrice = false
+			local isCharacterThatConvertsMaxHealth = CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[player:GetPlayerType()]
 			if pickup.Price == -1 then
 				--1 Red
-				CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -2)
+				if isCharacterThatConvertsMaxHealth then
+					CustomHealthAPI.Library.AddHealth(player, "BONE_HEART", -1)
+				else
+					CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -2)
+				end
 				updatingPrice = true
 			elseif pickup.Price == -2 then
 				--2 Red
-				CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -4)
+				if isCharacterThatConvertsMaxHealth then
+					CustomHealthAPI.Library.AddHealth(player, "BONE_HEART", -2)
+				else
+					CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -4)
+				end
 				updatingPrice = true
 			elseif pickup.Price == -3 then
 				--3 soul
@@ -79,13 +88,21 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 					CustomHealthAPI.Library.AddHealth(player, "SOUL_HEART", soulToRemove * -1)
 				end
 				if maxToRemove > 0 and not CustomHealthAPI.Helper.PlayerIsTheSoul(player) then
-					CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", maxToRemove * -1)
+					if isCharacterThatConvertsMaxHealth then
+						CustomHealthAPI.Library.AddHealth(player, "BONE_HEART", math.ceil(maxToRemove / 2) * -1)
+					else
+						CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", maxToRemove * -1)
+					end
 				end
 				
 				updatingPrice = true
 			elseif pickup.Price == -4 then
 				--1 Red, 2 Soul
-				CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -2)
+				if isCharacterThatConvertsMaxHealth then
+					CustomHealthAPI.Library.AddHealth(player, "BONE_HEART", -1)
+				else
+					CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -2)
+				end
 				CustomHealthAPI.Library.AddHealth(player, "SOUL_HEART", -4)
 				updatingPrice = true
 			elseif pickup.Price == -7 then
@@ -98,7 +115,11 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 				updatingPrice = true
 			elseif pickup.Price == -9 then
 				--1 Red, 1 Soul
-				CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -2)
+				if isCharacterThatConvertsMaxHealth then
+					CustomHealthAPI.Library.AddHealth(player, "BONE_HEART", -1)
+				else
+					CustomHealthAPI.Library.AddHealth(player, "EMPTY_HEART", -2)
+				end
 				CustomHealthAPI.Library.AddHealth(player, "SOUL_HEART", -2)
 				updatingPrice = true
 			end

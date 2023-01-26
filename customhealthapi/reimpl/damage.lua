@@ -107,6 +107,8 @@ function CustomHealthAPI.Mod:ProcessTakeDamageCallback(ent, amount, flags, sourc
 			player:GetData().CustomHealthAPISavedata.HandlingDamageCountdown = countdown
 			
 			player:GetData().CustomHealthAPIOtherData.InDamageCallback = nil
+			player:GetData().CustomHealthAPIOtherData.ShouldActivateScapular = player:GetEffects():HasCollectibleEffect(CollectibleType.COLLECTIBLE_SCAPULAR)
+			
 			return
 		end
 	end
@@ -378,11 +380,12 @@ function CustomHealthAPI.Helper.FinishDamageDesync(player)
 		player:GetData().CustomHealthAPIOtherData = player:GetData().CustomHealthAPIOtherData or {}
 		local otherdata = player:GetData().CustomHealthAPIOtherData
 		
-		if not otherdata.ActivatedScapular and flags & DamageFlag.DAMAGE_RED_HEARTS ~= DamageFlag.DAMAGE_RED_HEARTS then
+		if otherdata.ShouldActivateScapular and flags & DamageFlag.DAMAGE_RED_HEARTS ~= DamageFlag.DAMAGE_RED_HEARTS then
 			CustomHealthAPI.Helper.UpdateHealthMasks(player, "SOUL_HEART", 2)
 			CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
-			otherdata.ActivatedScapular = true
 		end
+		
+		otherdata.ShouldActivateScapular = nil
 	end
 	
 	if player:HasTrinket(TrinketType.TRINKET_FINGER_BONE) and not player:IsDead() then
@@ -468,24 +471,6 @@ function CustomHealthAPI.Helper.HandleGlassCannonOnBreaking(player)
 				end
 			end
 		end
-	end
-end
-
-function CustomHealthAPI.Helper.AddHandleScapularOnNewRoomCallback()
-	Isaac.AddCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_NEW_ROOM, CustomHealthAPI.Mod.HandleScapularOnNewRoomCallback, -1)
-end
-table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHandleScapularOnNewRoomCallback)
-
-function CustomHealthAPI.Helper.RemoveHandleScapularOnNewRoomCallback()
-	CustomHealthAPI.Mod:RemoveCallback(ModCallbacks.MC_POST_NEW_ROOM, CustomHealthAPI.Mod.HandleScapularOnNewRoomCallback)
-end
-table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemoveHandleScapularOnNewRoomCallback)
-
-function CustomHealthAPI.Mod:HandleScapularOnNewRoomCallback()
-	for i = 0, Game():GetNumPlayers() - 1 do
-		local player = Isaac.GetPlayer(i)
-		player:GetData().CustomHealthAPIOtherData = player:GetData().CustomHealthAPIOtherData or {}
-		player:GetData().CustomHealthAPIOtherData.ActivatedScapular = nil
 	end
 end
 

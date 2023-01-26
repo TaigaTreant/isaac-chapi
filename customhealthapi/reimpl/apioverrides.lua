@@ -640,6 +640,10 @@ CustomHealthAPI.Helper.HookFunctions.GetEffectiveMaxHearts = function(player)
 	end
 	
 	if CustomHealthAPI and not CustomHealthAPI.Helper.PlayerIsIgnored(player) then
+		if CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[player:GetPlayerType()] then
+			return 0
+		end
+	
 		CustomHealthAPI.Helper.CheckIfHealthOrderSet()
 		CustomHealthAPI.Helper.CheckHealthIsInitializedForPlayer(player)
 		CustomHealthAPI.Helper.CheckSubPlayerInfoOfPlayer(player)
