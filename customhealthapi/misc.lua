@@ -169,20 +169,11 @@ function CustomHealthAPI.Helper.ClearBasegameHealthNoOther(player)
 	end
 end
 
-function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
-	if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
-		if player:GetOtherTwin() ~= nil then
-			return CustomHealthAPI.Helper.UpdateBasegameHealthState(player:GetOtherTwin())
-		end
-	end
-	
-	if CustomHealthAPI.Helper.PlayerIsIgnored(player) then
-		return
-	end
-	
+function CustomHealthAPI.Helper.HandleBasegameHealthStateUpdate(player, updateFunc)
 	local data = player:GetData().CustomHealthAPISavedata
 	local otherMasks = data.OtherHealthMasks
 	
+	-- before update
 	local addedWhoreOfBabylonPrevention = CustomHealthAPI.Helper.AddWhoreOfBabylonPrevention(player)
 	local addedBloodyBabylonPrevention = CustomHealthAPI.Helper.AddBloodyBabylonPrevention(player)
 	
@@ -203,13 +194,6 @@ function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 		Game().Challenge = Challenge.CHALLENGE_NULL
 	end
 	
-	local maxHealth = CustomHealthAPI.Helper.GetTotalMaxHP(player)
-	local brokenHealth = CustomHealthAPI.Helper.GetTotalKeys(player, "BROKEN_HEART")
-	
-	local redHealthTotal = CustomHealthAPI.Helper.GetTotalRedHP(player, true)
-	local rottenHealth = CustomHealthAPI.Helper.GetTotalHPOfKey(player, "ROTTEN_HEART")
-	local redHealth = redHealthTotal - (rottenHealth * 2)
-	
 	for i = 2, 0, -1 do
 		if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
 			player:SetActiveCharge(0, i)
@@ -224,43 +208,103 @@ function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 		end
 	end
 	
-	CustomHealthAPI.Helper.AddBasegameMaxHealthWithoutModifiers(player, maxHealth)
-	CustomHealthAPI.Helper.AddBasegameBrokenHealthWithoutModifiers(player, brokenHealth)
+	-- update
+	updateFunc(player)
 	
-	for i = 1, #otherMasks do
-		local mask = otherMasks[i]
-		for j = 1, #mask do
-			local health = mask[j]
-			local key = health.Key
-			local atMax = health.HP >= CustomHealthAPI.PersistentData.HealthDefinitions[key].MaxHP
-			
-			if CustomHealthAPI.PersistentData.HealthDefinitions[key].Type == CustomHealthAPI.Enums.HealthTypes.CONTAINER and
-			   CustomHealthAPI.PersistentData.HealthDefinitions[key].KindContained ~= CustomHealthAPI.Enums.HealthKinds.NONE and 
-			   CustomHealthAPI.PersistentData.HealthDefinitions[key].MaxHP > 0
-			then
-				CustomHealthAPI.Helper.AddBasegameBoneHealthWithoutModifiers(player, 1)
-			elseif key == "BLACK_HEART" then
-				CustomHealthAPI.Helper.AddBasegameBlackHealthWithoutModifiers(player, (atMax and 2) or 1)
-			elseif CustomHealthAPI.PersistentData.HealthDefinitions[key].Type == CustomHealthAPI.Enums.HealthTypes.SOUL and
-			       key ~= "BLACK_HEART"
-			then
-				CustomHealthAPI.Helper.AddBasegameSoulHealthWithoutModifiers(player, (atMax and 2) or 1)
-			end
-		end
-	end
-	
-	CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, rottenHealth * 2)
-	CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, redHealth)
-	CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, data.Overlays["GOLDEN_HEART"])
-	CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, data.Overlays["ETERNAL_HEART"])
-	
+	-- after update
 	player:GetEffects():AddNullEffect(NullItemID.ID_SPIRIT_SHACKLES_DISABLED, true, shacklesDisabled)
-	
+		
 	for i = 2, 0, -1 do
 		if alabasterSlots[i] then
 			player:SetActiveCharge(alabasterCharges[i], i)
 		end
 	end
+	
+	if addedWhoreOfBabylonPrevention then CustomHealthAPI.Helper.RemoveWhoreOfBabylonPrevention(player) end
+	if addedBloodyBabylonPrevention then CustomHealthAPI.Helper.RemoveBloodyBabylonPrevention(player) end
+	
+	if challengeIsHaveAHeart then
+		Game().Challenge = Challenge.CHALLENGE_HAVE_A_HEART
+	end
+end
+
+function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
+	if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
+		if player:GetOtherTwin() ~= nil then
+			return CustomHealthAPI.Helper.UpdateBasegameHealthState(player:GetOtherTwin())
+		end
+	end
+	
+	if CustomHealthAPI.Helper.PlayerIsIgnored(player) then
+		return
+	end
+	
+	local data = player:GetData().CustomHealthAPISavedata
+	local otherMasks = data.OtherHealthMasks
+	
+	local maxHealth = CustomHealthAPI.Helper.GetTotalMaxHP(player)
+	local brokenHealth = CustomHealthAPI.Helper.GetTotalKeys(player, "BROKEN_HEART")
+	
+	local redHealthTotal = CustomHealthAPI.Helper.GetTotalRedHP(player, true)
+	local rottenHealth = CustomHealthAPI.Helper.GetTotalHPOfKey(player, "ROTTEN_HEART")
+	local redHealth = redHealthTotal - (rottenHealth * 2)
+	
+	local updateFunc = function(player)
+		CustomHealthAPI.Helper.AddBasegameMaxHealthWithoutModifiers(player, maxHealth)
+		CustomHealthAPI.Helper.AddBasegameBrokenHealthWithoutModifiers(player, brokenHealth)
+		
+		for i = 1, #otherMasks do
+			local mask = otherMasks[i]
+			for j = 1, #mask do
+				local health = mask[j]
+				local key = health.Key
+				local atMax = health.HP >= CustomHealthAPI.PersistentData.HealthDefinitions[key].MaxHP
+				
+				if CustomHealthAPI.PersistentData.HealthDefinitions[key].Type == CustomHealthAPI.Enums.HealthTypes.CONTAINER and
+				   CustomHealthAPI.PersistentData.HealthDefinitions[key].KindContained ~= CustomHealthAPI.Enums.HealthKinds.NONE and 
+				   CustomHealthAPI.PersistentData.HealthDefinitions[key].MaxHP > 0
+				then
+					CustomHealthAPI.Helper.AddBasegameBoneHealthWithoutModifiers(player, 1)
+				elseif key == "BLACK_HEART" then
+					CustomHealthAPI.Helper.AddBasegameBlackHealthWithoutModifiers(player, (atMax and 2) or 1)
+				elseif CustomHealthAPI.PersistentData.HealthDefinitions[key].Type == CustomHealthAPI.Enums.HealthTypes.SOUL and
+					   key ~= "BLACK_HEART"
+				then
+					CustomHealthAPI.Helper.AddBasegameSoulHealthWithoutModifiers(player, (atMax and 2) or 1)
+				end
+			end
+		end
+		
+		CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, rottenHealth * 2)
+		CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, redHealth)
+		CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, data.Overlays["GOLDEN_HEART"])
+		CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, data.Overlays["ETERNAL_HEART"])
+	end
+	
+	CustomHealthAPI.Helper.HandleBasegameHealthStateUpdate(player, updateFunc)
+end
+
+function CustomHealthAPI.Helper.UpdateBasegameHealthStateNoOther(player)
+	local data = player:GetData().CustomHealthAPISavedata
+	
+	local addedWhoreOfBabylonPrevention = CustomHealthAPI.Helper.AddWhoreOfBabylonPrevention(player)
+	local addedBloodyBabylonPrevention = CustomHealthAPI.Helper.AddBloodyBabylonPrevention(player)
+	
+	local challengeIsHaveAHeart = Game().Challenge == Challenge.CHALLENGE_HAVE_A_HEART
+	if challengeIsHaveAHeart then
+		Game().Challenge = Challenge.CHALLENGE_NULL
+	end
+	
+	CustomHealthAPI.Helper.ClearBasegameHealthNoOther(player)
+	
+	local newTotal = CustomHealthAPI.Helper.GetTotalRedHP(player, true)
+	local newRotten = CustomHealthAPI.Helper.GetTotalHPOfKey(player, "ROTTEN_HEART")
+	local newRed = newTotal - (newRotten * 2)
+	
+	CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, newRotten * 2)
+	CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, newRed)
+	CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, data.Overlays["GOLDEN_HEART"])
+	CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, data.Overlays["ETERNAL_HEART"])
 	
 	if addedWhoreOfBabylonPrevention then CustomHealthAPI.Helper.RemoveWhoreOfBabylonPrevention(player) end
 	if addedBloodyBabylonPrevention then CustomHealthAPI.Helper.RemoveBloodyBabylonPrevention(player) end

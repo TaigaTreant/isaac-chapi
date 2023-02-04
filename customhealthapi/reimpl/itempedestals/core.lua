@@ -177,7 +177,7 @@ function CustomHealthAPI.Helper.HandleCollectibleHP(player, item)
 		CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 		manuallyHandleTransformations = true
 	elseif item == CollectibleType.COLLECTIBLE_BRITTLE_BONES then
-		CustomHealthAPI.Helper.HandleBrittleBones(player)
+		CustomHealthAPI.Helper.HandleBrittleBonesCollection(player)
 		CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 		manuallyHandleTransformations = true
 	elseif item == CollectibleType.COLLECTIBLE_HEARTBREAK then

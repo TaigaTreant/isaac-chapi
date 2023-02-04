@@ -148,33 +148,7 @@ function CustomHealthAPI.Helper.ResyncRedHealthOfPlayer(player)
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "RED_HEART", diffRed, true, false, true, true)
 	end
 	
-	local data = player:GetData().CustomHealthAPISavedata
-	
-	local addedWhoreOfBabylonPrevention = CustomHealthAPI.Helper.AddWhoreOfBabylonPrevention(player)
-	local addedBloodyBabylonPrevention = CustomHealthAPI.Helper.AddBloodyBabylonPrevention(player)
-	
-	local challengeIsHaveAHeart = Game().Challenge == Challenge.CHALLENGE_HAVE_A_HEART
-	if challengeIsHaveAHeart then
-		Game().Challenge = Challenge.CHALLENGE_NULL
-	end
-	
-	CustomHealthAPI.Helper.ClearBasegameHealthNoOther(player)
-	
-	local newTotal = CustomHealthAPI.Helper.GetTotalRedHP(player, true)
-	local newRotten = CustomHealthAPI.Helper.GetTotalHPOfKey(player, "ROTTEN_HEART")
-	local newRed = newTotal - (newRotten * 2)
-	
-	CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, newRotten * 2)
-	CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, newRed)
-	CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, data.Overlays["GOLDEN_HEART"])
-	CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, data.Overlays["ETERNAL_HEART"])
-	
-	if addedWhoreOfBabylonPrevention then CustomHealthAPI.Helper.RemoveWhoreOfBabylonPrevention(player) end
-	if addedBloodyBabylonPrevention then CustomHealthAPI.Helper.RemoveBloodyBabylonPrevention(player) end
-	
-	if challengeIsHaveAHeart then
-		Game().Challenge = Challenge.CHALLENGE_HAVE_A_HEART
-	end
+	CustomHealthAPI.Helper.UpdateBasegameHealthStateNoOther(player)
 end
 
 function CustomHealthAPI.Helper.ResyncOtherHealthOfPlayer(player)
@@ -431,94 +405,7 @@ function CustomHealthAPI.Helper.ResyncOtherHealthOfPlayer(player)
 	-- * Resync health
 	-- **************************************************
 	
-	local data = player:GetData().CustomHealthAPISavedata
-	local masks = data.OtherHealthMasks
-	
-	local addedWhoreOfBabylonPrevention = CustomHealthAPI.Helper.AddWhoreOfBabylonPrevention(player)
-	local addedBloodyBabylonPrevention = CustomHealthAPI.Helper.AddBloodyBabylonPrevention(player)
-	
-	local alabasterSlots = {[0] = false, [1] = false, [2] = false}
-	local alabasterCharges = {[0] = 0, [1] = 0, [2] = 0}
-	for i = 2, 0, -1 do
-		if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
-			alabasterSlots[i] = true
-			alabasterCharges[i] = player:GetActiveCharge(i)
-		end
-	end
-	
-	local shacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
-	player:GetEffects():RemoveNullEffect(NullItemID.ID_SPIRIT_SHACKLES_DISABLED, shacklesDisabled)
-	
-	local challengeIsHaveAHeart = Game().Challenge == Challenge.CHALLENGE_HAVE_A_HEART
-	if challengeIsHaveAHeart then
-		Game().Challenge = Challenge.CHALLENGE_NULL
-	end
-	
-	local newMax = CustomHealthAPI.Helper.GetTotalMaxHP(player)
-	local newBroken = CustomHealthAPI.Helper.GetTotalKeys(player, "BROKEN_HEART")
-	
-	local redTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player)
-	local rotten = CustomHealthAPI.PersistentData.OverriddenFunctions.GetRottenHearts(player)
-	local red = redTotal - (rotten * 2)
-	
-	for i = 2, 0, -1 do
-		if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
-			player:SetActiveCharge(0, i)
-		end
-	end
-	
-	CustomHealthAPI.Helper.ClearBasegameHealth(player)
-	
-	for i = 2, 0, -1 do
-		if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
-			player:SetActiveCharge(24, i)
-		end
-	end
-	
-	CustomHealthAPI.Helper.AddBasegameMaxHealthWithoutModifiers(player, newMax)
-	CustomHealthAPI.Helper.AddBasegameBrokenHealthWithoutModifiers(player, newBroken)
-	
-	for i = 1, #masks do
-		local mask = masks[i]
-		for j = 1, #mask do
-			local health = mask[j]
-			local key = health.Key
-			local atMax = health.HP >= CustomHealthAPI.PersistentData.HealthDefinitions[key].MaxHP
-			
-			if CustomHealthAPI.PersistentData.HealthDefinitions[key].Type == CustomHealthAPI.Enums.HealthTypes.CONTAINER and
-			   CustomHealthAPI.PersistentData.HealthDefinitions[key].KindContained ~= CustomHealthAPI.Enums.HealthKinds.NONE and 
-			   CustomHealthAPI.PersistentData.HealthDefinitions[key].MaxHP > 0
-			then
-				CustomHealthAPI.Helper.AddBasegameBoneHealthWithoutModifiers(player, 1)
-			elseif key == "BLACK_HEART" then
-				CustomHealthAPI.Helper.AddBasegameBlackHealthWithoutModifiers(player, (atMax and 2) or 1)
-			elseif CustomHealthAPI.PersistentData.HealthDefinitions[key].Type == CustomHealthAPI.Enums.HealthTypes.SOUL and
-			       key ~= "BLACK_HEART"
-			then
-				CustomHealthAPI.Helper.AddBasegameSoulHealthWithoutModifiers(player, (atMax and 2) or 1)
-			end
-		end
-	end
-	
-	CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, rotten * 2)
-	CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, red)
-	CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, data.Overlays["GOLDEN_HEART"])
-	CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, data.Overlays["ETERNAL_HEART"])
-	
-	player:GetEffects():AddNullEffect(NullItemID.ID_SPIRIT_SHACKLES_DISABLED, true, shacklesDisabled)
-		
-	for i = 2, 0, -1 do
-		if alabasterSlots[i] then
-			player:SetActiveCharge(alabasterCharges[i], i)
-		end
-	end
-	
-	if addedWhoreOfBabylonPrevention then CustomHealthAPI.Helper.RemoveWhoreOfBabylonPrevention(player) end
-	if addedBloodyBabylonPrevention then CustomHealthAPI.Helper.RemoveBloodyBabylonPrevention(player) end
-	
-	if challengeIsHaveAHeart then
-		Game().Challenge = Challenge.CHALLENGE_HAVE_A_HEART
-	end
+	CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 end
 
 function CustomHealthAPI.Helper.ResyncOverlays(player)
@@ -591,6 +478,7 @@ function CustomHealthAPI.Helper.ResyncHealthOfPlayer(player, isSubPlayer)
 	
 	player:GetData().CustomHealthAPIOtherData = player:GetData().CustomHealthAPIOtherData or {}
 	player:GetData().CustomHealthAPIOtherData.InDamageCallback = nil
+	player:GetData().CustomHealthAPIOtherData.DoNotUpdateBasegameHealthState = nil
 	
 	if not avoidRecursive then
 		avoidRecursive = true

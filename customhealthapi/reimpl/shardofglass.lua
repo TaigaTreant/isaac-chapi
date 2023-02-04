@@ -80,7 +80,8 @@ function CustomHealthAPI.Helper.UpdateShardOfGlass(player)
 	if data and 
 	   data.ShardBleedTimer ~= nil and
 	   (CustomHealthAPI.Helper.GetTotalRedHP(player, true) <= 0 or 
-	    CustomHealthAPI.Helper.GetTotalHP(player) <= 1)
+	    CustomHealthAPI.Helper.GetTotalHP(player) <= 1 or
+		player:GetEffects():HasNullEffect(NullItemID.ID_LOST_CURSE))
 	then 
 		data.ShardBleedTimer = nil 
 	end

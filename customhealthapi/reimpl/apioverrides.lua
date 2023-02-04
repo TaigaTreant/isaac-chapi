@@ -67,6 +67,20 @@ if not CustomHealthAPI.PersistentData.OverriddenFunctions then
 		end)
 	end
 
+	----------------------
+	-- Entity Overrides --
+	----------------------
+	
+	BeginClass(Entity)
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamageEntity = META0.TakeDamage
+
+	function META:TakeDamage(amount, flags, source, countdown)
+		return CustomHealthAPI.Helper.HookFunctions.TakeDamageEntity(self, amount, flags, source, countdown)
+	end
+
+	EndClass()
+
 	----------------------------
 	-- EntityPlayer Overrides --
 	----------------------------
@@ -108,6 +122,7 @@ if not CustomHealthAPI.PersistentData.OverriddenFunctions then
 	CustomHealthAPI.PersistentData.OverriddenFunctions.IsBoneHeart = META0.IsBoneHeart
 	CustomHealthAPI.PersistentData.OverriddenFunctions.RemoveBlackHeart = META0.RemoveBlackHeart
 	CustomHealthAPI.PersistentData.OverriddenFunctions.SetFullHearts = META0.SetFullHearts
+	CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamagePlayer = META0.TakeDamage
 
 	function META:AddBlackHearts(hp)
 		CustomHealthAPI.Helper.HookFunctions.AddBlackHearts(self, hp)
@@ -247,6 +262,10 @@ if not CustomHealthAPI.PersistentData.OverriddenFunctions then
 
 	function META:SetFullHearts()
 		CustomHealthAPI.Helper.HookFunctions.SetFullHearts(self)
+	end
+
+	function META:TakeDamage(amount, flags, source, countdown)
+		return CustomHealthAPI.Helper.HookFunctions.TakeDamagePlayer(self, amount, flags, source, countdown)
 	end
 
 	EndClass()
@@ -1016,4 +1035,78 @@ CustomHealthAPI.Helper.HookFunctions.RenderHUD = function(hud)
 	if CustomHealthAPI and CustomHealthAPI.Mod and CustomHealthAPI.Mod.RenderCustomHealthCallback then
 		CustomHealthAPI.Mod:RenderCustomHealthCallback()
 	end
+end
+
+CustomHealthAPI.Helper.HookFunctions.TakeDamage = function(ent, amount, flags, source, countdown, damageFunc, ignoreResync)
+	local alreadyInDamageCallback = (ent:GetData().CustomHealthAPIOtherData ~= nil and 
+	                                ent:GetData().CustomHealthAPIOtherData.InDamageCallback) or nil
+	
+	local alreadyEnabledDebugThreeForDamage = (ent:GetData().CustomHealthAPIPersistent ~= nil and 
+	                                          ent:GetData().CustomHealthAPIPersistent.EnabledDebugThreeForDamage) or nil
+	
+	local alreadyHandlingDamage = (ent:GetData().CustomHealthAPISavedata ~= nil and 
+	                               ent:GetData().CustomHealthAPISavedata.HandlingDamage) or nil
+	local alreadyHandlingDamageAmount = (ent:GetData().CustomHealthAPISavedata ~= nil and 
+	                                     ent:GetData().CustomHealthAPISavedata.HandlingDamageAmount) or nil
+	local alreadyHandlingDamageFlags = (ent:GetData().CustomHealthAPISavedata ~= nil and 
+	                                    ent:GetData().CustomHealthAPISavedata.HandlingDamageFlags) or nil
+	local alreadyHandlingDamageSource = (ent:GetData().CustomHealthAPISavedata ~= nil and 
+	                                     ent:GetData().CustomHealthAPISavedata.HandlingDamageSource) or nil
+	local alreadyHandlingDamageCountdown = (ent:GetData().CustomHealthAPISavedata ~= nil and 
+	                                        ent:GetData().CustomHealthAPISavedata.HandlingDamageCountdown) or nil
+	
+	local returnVal = damageFunc(ent, amount, flags, source, countdown)
+	if not ignoreResync and 
+	   ent:GetData().CustomHealthAPISavedata and 
+	   ent:GetData().CustomHealthAPISavedata.HandlingDamage ~= nil 
+	then
+		CustomHealthAPI.Helper.FinishDamageDesync(ent)
+	end
+	
+	if alreadyInDamageCallback ~= nil then
+		ent:GetData().CustomHealthAPIOtherData.InDamageCallback = alreadyInDamageCallback
+	end
+	
+	if alreadyHandlingDamage ~= nil then
+		ent:GetData().CustomHealthAPISavedata.HandlingDamage = alreadyHandlingDamage
+		ent:GetData().CustomHealthAPISavedata.HandlingDamageAmount = alreadyHandlingDamageAmount
+		ent:GetData().CustomHealthAPISavedata.HandlingDamageFlags = alreadyHandlingDamageFlags
+		ent:GetData().CustomHealthAPISavedata.HandlingDamageSource = alreadyHandlingDamageSource
+		ent:GetData().CustomHealthAPISavedata.HandlingDamageCountdown = alreadyHandlingDamageCountdown
+		
+		ent:GetData().CustomHealthAPISavedata.HandlingDamageCanShackle = ent:ToPlayer() and
+		                                                                 not (player:GetEffects():HasNullEffect(NullItemID.ID_SPIRIT_SHACKLES_SOUL) or 
+		                                                                      player:GetEffects():HasNullEffect(NullItemID.ID_SPIRIT_SHACKLES_DISABLED))
+		ent:GetData().CustomHealthAPIOtherData.ShouldActivateScapular = ent:ToPlayer() and 
+		                                                                ent:ToPlayer():GetEffects():HasCollectibleEffect(CollectibleType.COLLECTIBLE_SCAPULAR)
+	end
+	
+	if alreadyEnabledDebugThreeForDamage ~= nil then
+		ent:GetData().CustomHealthAPIPersistent.EnabledDebugThreeForDamage = alreadyEnabledDebugThreeForDamage
+		
+		local s = ""
+		repeat
+			s = Isaac.ExecuteCommand("debug 3")
+		until s == "Enabled debug flag."
+	end
+	
+	return returnVal
+end
+
+CustomHealthAPI.Helper.HookFunctions.TakeDamageEntity = function(ent, amount, flags, source, countdown)
+	return CustomHealthAPI.Helper.HookFunctions.TakeDamage(ent, 
+	                                                       amount, 
+	                                                       flags, 
+	                                                       source, 
+	                                                       countdown, 
+	                                                       CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamageEntity)
+end
+
+CustomHealthAPI.Helper.HookFunctions.TakeDamagePlayer = function(ent, amount, flags, source, countdown)
+	return CustomHealthAPI.Helper.HookFunctions.TakeDamage(ent, 
+	                                                       amount, 
+	                                                       flags, 
+	                                                       source, 
+	                                                       countdown, 
+	                                                       CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamagePlayer)
 end

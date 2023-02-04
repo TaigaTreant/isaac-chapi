@@ -10,7 +10,8 @@ table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemoveHea
 
 function CustomHealthAPI.Helper.IsHoldingTaintedForgotten(player)
 	local forgo = player:GetOtherTwin()
-	return math.abs(forgo.Position.X - player.Position.X) < 0.000001 and
+	return forgo and
+	       math.abs(forgo.Position.X - player.Position.X) < 0.000001 and
 	       math.abs(forgo.Position.Y - player.Position.Y) < 0.000001 and
 	       player:IsHoldingItem() and
 	       forgo:HasEntityFlags(EntityFlag.FLAG_HELD)
@@ -24,6 +25,10 @@ function CustomHealthAPI.Helper.CheckIfHeartShouldUseCustomLogic(player, pickup)
 	
 	if CustomHealthAPI.Helper.PlayerIsIgnored(player) then 
 		return false
+	end
+	
+	if pickup.Price == PickupPrice.PRICE_SPIKES then
+		return true
 	end
 
 	local hearttype = pickup.SubType
