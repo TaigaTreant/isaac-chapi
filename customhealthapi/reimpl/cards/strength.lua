@@ -202,6 +202,7 @@ function CustomHealthAPI.Helper.RemoveTemporaryHP(player, datakey)
 end
 
 function CustomHealthAPI.Helper.AddHandleStrengthOnNewRoomCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.HandleStrengthOnNewRoomCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHandleStrengthOnNewRoomCallback)

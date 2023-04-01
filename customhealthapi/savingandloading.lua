@@ -1,6 +1,7 @@
 CustomHealthAPI.PersistentData.SaveDataLoaded = CustomHealthAPI.PersistentData.SaveDataLoaded or false
 
 function CustomHealthAPI.Helper.AddSaveDataOnNewLevelCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_NEW_LEVEL, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.SaveDataOnNewLevelCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddSaveDataOnNewLevelCallback)
@@ -18,6 +19,7 @@ function CustomHealthAPI.Mod:SaveDataOnNewLevelCallback()
 end
 
 function CustomHealthAPI.Helper.AddSaveDataOnExitCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PRE_GAME_EXIT, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.SaveDataOnExitCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddSaveDataOnExitCallback)
@@ -36,6 +38,7 @@ function CustomHealthAPI.Mod:SaveDataOnExitCallback(shouldSave)
 end
 
 function CustomHealthAPI.Helper.AddHandleSaveDataOnGameStartCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_GAME_STARTED, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.HandleSaveDataOnGameStartCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHandleSaveDataOnGameStartCallback)

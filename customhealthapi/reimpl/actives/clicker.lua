@@ -1,4 +1,5 @@
 function CustomHealthAPI.Helper.AddPreUseClickerCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PRE_USE_ITEM, math.huge, CustomHealthAPI.Mod.PreUseClickerCallback, CollectibleType.COLLECTIBLE_CLICKER)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddPreUseClickerCallback)
@@ -17,6 +18,7 @@ function CustomHealthAPI.Mod:PreUseClickerCallback(collectible, rng, player)
 end
 
 function CustomHealthAPI.Helper.AddUseClickerCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_USE_ITEM, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.UseClickerCallback, CollectibleType.COLLECTIBLE_CLICKER)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddUseClickerCallback)

@@ -20,6 +20,7 @@ function CustomHealthAPI.Mod:ResetRecursivePreventionCallback()
 end
 
 function CustomHealthAPI.Helper.AddCheckIfHealthValuesChangedCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_UPDATE, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.CheckIfHealthValuesChangedCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddCheckIfHealthValuesChangedCallback)
@@ -405,7 +406,41 @@ function CustomHealthAPI.Helper.ResyncOtherHealthOfPlayer(player)
 	-- * Resync health
 	-- **************************************************
 	
+	local redTotalBefore = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player)
+	local rottenBefore = CustomHealthAPI.PersistentData.OverriddenFunctions.GetRottenHearts(player)
+	local redBefore = redTotalBefore - rottenBefore * 2
+	local eternalBefore = CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts(player)
+	local goldenBefore = CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts(player)
+	
 	CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
+	
+	local redTotalAfter = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player)
+	local eternalAfter = CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts(player)
+	local goldenAfter = CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts(player)
+	
+	local addedWhoreOfBabylonPrevention = CustomHealthAPI.Helper.AddWhoreOfBabylonPrevention(player)
+	local addedBloodyBabylonPrevention = CustomHealthAPI.Helper.AddBloodyBabylonPrevention(player)
+	
+	local challengeIsHaveAHeart = Game().Challenge == Challenge.CHALLENGE_HAVE_A_HEART
+	if challengeIsHaveAHeart then
+		Game().Challenge = Challenge.CHALLENGE_NULL
+	end
+	
+	CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, -1 * goldenAfter)
+	CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, -1 * eternalAfter)
+	CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, -1 * redTotalAfter)
+	
+	CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, rottenBefore * 2)
+	CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, redBefore)
+	CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, eternalBefore)
+	CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, goldenBefore)
+	
+	if addedWhoreOfBabylonPrevention then CustomHealthAPI.Helper.RemoveWhoreOfBabylonPrevention(player) end
+	if addedBloodyBabylonPrevention then CustomHealthAPI.Helper.RemoveBloodyBabylonPrevention(player) end
+	
+	if challengeIsHaveAHeart then
+		Game().Challenge = Challenge.CHALLENGE_HAVE_A_HEART
+	end
 end
 
 function CustomHealthAPI.Helper.ResyncOverlays(player)

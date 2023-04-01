@@ -759,6 +759,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToJacobEsau(player, soulCha
 					local health = mask[j]
 					local typ = CustomHealthAPI.Library.GetInfoOfHealth(health, "Type")
 					local maxHP = CustomHealthAPI.Library.GetInfoOfHealth(health, "MaxHP")
+					local kindContained = CustomHealthAPI.Library.GetInfoOfHealth(health, "KindContained")
 					
 					if typ == CustomHealthAPI.Enums.HealthTypes.CONTAINER and 
 					   kindContained ~= CustomHealthAPI.Enums.HealthKinds.NONE and
@@ -1032,6 +1033,8 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToGeneric(player, soulCharg
 	
 	-- resync basegame hp
 	CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
+
+	local subplayer = player:GetSubPlayer()
 	if subplayer then CustomHealthAPI.Helper.UpdateBasegameHealthState(subplayer) end
 end
 

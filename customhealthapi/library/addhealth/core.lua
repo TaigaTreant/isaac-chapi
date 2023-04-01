@@ -73,11 +73,37 @@ function CustomHealthAPI.Library.AddHealth(player, k, h, ignoreTaintedMaggieDoub
 		end
 	elseif healthType == CustomHealthAPI.Enums.HealthTypes.SOUL then
 		if playerType == PlayerType.PLAYER_BETHANY then
+			local hpToAdd = math.ceil(hp)
+			
+			if not ignoreSpiritShackles then
+				local numShacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
+				if numShacklesDisabled > 0 and hpToAdd > 0 then
+					hpToAdd = math.max(0, hpToAdd - CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP"))
+					player:GetEffects():RemoveNullEffect(NullItemID.ID_SPIRIT_SHACKLES_DISABLED, numShacklesDisabled)
+					player:GetData().CustomHealthAPIOtherData.ShacklesDisabled = false
+				end
+			end
+			
+			if not ignoreAlabasterBox then
+				local alabasterChargesToAdd = 0
+				for i = 0, 2 do
+					if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
+						alabasterChargesToAdd = alabasterChargesToAdd + (12 - player:GetActiveCharge(i))
+					end
+				end
+				if alabasterChargesToAdd > 0 and hpToAdd > 0 then
+					local hpCharging = math.min(alabasterChargesToAdd, hpToAdd)
+					CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, hpCharging)
+					player:GetData().CustomHealthAPIOtherData.AlabasterChargesToAdd = math.max(0, alabasterChargesToAdd - hpCharging)
+					hpToAdd = math.max(0, hpToAdd - hpCharging)
+				end
+			end
+		
 			if not ignoreBethanyCharges then
 				if CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP") <= 1 then
-					player:AddSoulCharge(hp * 2)
+					player:AddSoulCharge(hpToAdd * 2)
 				else
-					player:AddSoulCharge(hp)
+					player:AddSoulCharge(hpToAdd)
 				end
 			end
 			return
@@ -96,7 +122,7 @@ function CustomHealthAPI.Library.AddHealth(player, k, h, ignoreTaintedMaggieDoub
 		if not ignoreSpiritShackles then
 			local numShacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
 			if numShacklesDisabled > 0 and hpToAdd > 0 then
-				hpToAdd = math.max(0, hpToAdd - math.max(2, CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP")))
+				hpToAdd = math.max(0, hpToAdd - CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP"))
 				player:GetEffects():RemoveNullEffect(NullItemID.ID_SPIRIT_SHACKLES_DISABLED, numShacklesDisabled)
 				player:GetData().CustomHealthAPIOtherData.ShacklesDisabled = false
 			end
@@ -111,7 +137,7 @@ function CustomHealthAPI.Library.AddHealth(player, k, h, ignoreTaintedMaggieDoub
 			end
 			if alabasterChargesToAdd > 0 and hpToAdd > 0 then
 				local hpCharging = math.min(alabasterChargesToAdd, hpToAdd)
-				CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts(player, hpCharging)
+				CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, hpCharging)
 				player:GetData().CustomHealthAPIOtherData.AlabasterChargesToAdd = math.max(0, alabasterChargesToAdd - hpCharging)
 				hpToAdd = math.max(0, hpToAdd - hpCharging)
 			end
@@ -359,6 +385,7 @@ function CustomHealthAPI.Library.TryConvertOtherKey(player, index, key, force)
 					newHP = 1
 					convertedHP = convertedHP - 2
 				else
+---@diagnostic disable-next-line: param-type-mismatch
 					newHP = math.min(maxHpOfKey, convertedHP)
 					convertedHP = convertedHP - newHP
 				end

@@ -1,4 +1,5 @@
 function CustomHealthAPI.Helper.AddStrawmanDetectionCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PLAYER_INIT, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.StrawmanDetectionCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddStrawmanDetectionCallback)
@@ -14,6 +15,7 @@ function CustomHealthAPI.Mod:StrawmanDetectionCallback(player)
 end
 
 function CustomHealthAPI.Helper.AddItemPedestalCollisionCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PRE_PICKUP_COLLISION, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.ItemPedestalCollisionCallback, PickupVariant.PICKUP_COLLECTIBLE)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddItemPedestalCollisionCallback)
@@ -129,18 +131,18 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 				pickup.Price = PickupPrice.PRICE_FREE
 				if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
 					if CustomHealthAPI.Helper.PlayerIsTheForgotten(player) then
-						CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts(player, 1)
-						CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, 2)
+						CustomHealthAPI.Helper.AddBoneHeartsKissesFix(player, 1)
+						CustomHealthAPI.Helper.AddHeartsKissesFix(player, 2)
 						pickup.Price = -1
 					elseif CustomHealthAPI.Helper.PlayerIsTheSoul(player) then
-						CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts(player, 2)
+						CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, 2)
 						pickup.Price = -7
 					elseif CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[player:GetPlayerType()] then
-						CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts(player, 2)
+						CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, 2)
 						pickup.Price = -7
 					else
-						CustomHealthAPI.PersistentData.OverriddenFunctions.AddMaxHearts(player, 2)
-						CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, 2)
+						CustomHealthAPI.Helper.AddMaxHeartsKissesFix(player, 2)
+						CustomHealthAPI.Helper.AddHeartsKissesFix(player, 2)
 						pickup.Price = -1
 					end
 				end

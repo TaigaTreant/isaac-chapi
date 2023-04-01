@@ -2,6 +2,7 @@ local healthsprites = {}
 CustomHealthAPI.PersistentData.DisableCustomHealthRendering = CustomHealthAPI.PersistentData.DisableCustomHealthRendering or false
 
 function CustomHealthAPI.Helper.AddRenderCustomHealthCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_RENDER, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.RenderCustomHealthCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddRenderCustomHealthCallback)
@@ -19,6 +20,7 @@ function CustomHealthAPI.Mod:RenderCustomHealthCallback()
 end
 
 function CustomHealthAPI.Helper.AddRenderCustomHealthOfStrawmanCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PLAYER_RENDER, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.RenderCustomHealthOfStrawmanCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddRenderCustomHealthOfStrawmanCallback)
@@ -439,7 +441,7 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 			local healthIndex = otherHealthIndex - 1 + ((isSubPlayer and 6) or 0)
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HEART)
 			for _, callback in ipairs(callbacks) do
-				returnTable = callback.Function(player, healthIndex, health, redHealth, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				local returnTable = callback.Function(player, healthIndex, health, redHealth, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true
@@ -480,7 +482,7 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 			local healthIndex = otherHealthIndex - 1 + ((isSubPlayer and 6) or 0)
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HEART)
 			for _, callback in ipairs(callbacks) do
-				returnTable = callback.Function(player, healthIndex, {Key = "ETERNAL_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				local returnTable = callback.Function(player, healthIndex, {Key = "ETERNAL_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true
@@ -528,7 +530,7 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 			local healthIndex = i - 1 + ((isSubPlayer and 6) or 0)
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HEART)
 			for _, callback in ipairs(callbacks) do
-				returnTable = callback.Function(player, healthIndex, {Key = "GOLDEN_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				local returnTable = callback.Function(player, healthIndex, {Key = "GOLDEN_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true
@@ -677,7 +679,7 @@ function CustomHealthAPI.Helper.RenderCurseOfTheUnknown(player, playerSlot, rend
 	local prevent = nil
 	local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_UNKNOWN_CURSE)
 	for _, callback in ipairs(callbacks) do
-		returnTable = callback.Function(player)
+		local returnTable = callback.Function(player)
 		if type(returnTable) == "table" then
 			if returnTable.Prevent ~= nil then
 				prevent = returnTable.Prevent
@@ -734,7 +736,7 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 			
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HOLY_MANTLE)
 			for _, callback in ipairs(callbacks) do
-				returnTable = callback.Function(player, healthIndex)
+				local returnTable = callback.Function(player, healthIndex)
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true
@@ -775,7 +777,7 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 			
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HOLY_MANTLE)
 			for _, callback in ipairs(callbacks) do
-				returnTable = callback.Function(player, healthIndex)
+				local returnTable = callback.Function(player, healthIndex)
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true

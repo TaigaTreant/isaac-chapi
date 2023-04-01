@@ -31,7 +31,9 @@ function CustomHealthAPI.Helper.IsPlayerUsingHorsePill(player, pillEffect, usefl
 end
 
 function CustomHealthAPI.Helper.AddCurrentlyHeldPillCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PLAYER_UPDATE, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.CurrentlyHeldPillCallback)
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PEFFECT_UPDATE, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.CurrentlyHeldPillCallback)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddCurrentlyHeldPillCallback)
@@ -48,6 +50,7 @@ function CustomHealthAPI.Mod:CurrentlyHeldPillCallback(player)
 end
 
 function CustomHealthAPI.Helper.AddCurrentlyHeldPillForAllCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_UPDATE, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.CurrentlyHeldPillForAllCallback)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddCurrentlyHeldPillForAllCallback)
@@ -65,6 +68,7 @@ function CustomHealthAPI.Mod:CurrentlyHeldPillForAllCallback()
 end
 
 function CustomHealthAPI.Helper.AddUsePillCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_USE_PILL, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.UsePillCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddUsePillCallback)

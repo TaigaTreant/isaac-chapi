@@ -2,6 +2,7 @@ local bleedingSprite = Sprite()
 bleedingSprite:Load("gfx/statuseffects.anm2", true)
 
 function CustomHealthAPI.Helper.AddUpdateShardOfGlassColorCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PEFFECT_UPDATE, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.UpdateShardOfGlassColorCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddUpdateShardOfGlassColorCallback)
@@ -20,6 +21,7 @@ function CustomHealthAPI.Mod:UpdateShardOfGlassColorCallback(player)
 end
 
 function CustomHealthAPI.Helper.AddUpdateShardOfGlassCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PLAYER_UPDATE, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.UpdateShardOfGlassCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddUpdateShardOfGlassCallback)

@@ -43,6 +43,11 @@ function CustomHealthAPI.Helper.PlayerIsIgnored(player)
 		   player:IsCoopGhost()
 end
 
+function CustomHealthAPI.Helper.PlayerIsSoulHeartOnly(player)
+	local playertype = player:GetPlayerType()
+	return CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[playertype] ~= nil
+end
+
 function CustomHealthAPI.Helper.GetPlayerIndex(player)
     local rng
     if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
@@ -54,20 +59,76 @@ function CustomHealthAPI.Helper.GetPlayerIndex(player)
     return tostring(rng:GetSeed())
 end
 
+function CustomHealthAPI.Helper.AddHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
+	end
+end
+
 function CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, amount)
 	if not (CustomHealthAPI.Helper.PlayerIsTheSoul(player) or CustomHealthAPI.Helper.PlayerIsTaintedBethany(player)) then
 		if amount > 0 then
 			if CustomHealthAPI.Helper.PlayerIsTaintedMaggie(player) then
 				local desiredRed = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player) + amount
-				CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, math.ceil(amount / 2))
+				CustomHealthAPI.Helper.AddHeartsKissesFix(player, math.ceil(amount / 2))
 				local actualRed = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player)
-				CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, desiredRed - actualRed)
+				CustomHealthAPI.Helper.AddHeartsKissesFix(player, desiredRed - actualRed)
 			else
-				CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, amount)
+				CustomHealthAPI.Helper.AddHeartsKissesFix(player, amount)
 			end
 		else
-			CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, amount)
+			CustomHealthAPI.Helper.AddHeartsKissesFix(player, amount)
 		end
+	end
+end
+
+function CustomHealthAPI.Helper.AddRottenHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
 	end
 end
 
@@ -75,48 +136,265 @@ function CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, 
 	if not (CustomHealthAPI.Helper.PlayerIsTheSoul(player) or CustomHealthAPI.Helper.PlayerIsTaintedBethany(player)) then
 		if amount > 0 then
 			if CustomHealthAPI.Helper.PlayerIsTaintedMaggie(player) then
-				CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts(player, math.ceil(amount / 2))
+				CustomHealthAPI.Helper.AddRottenHeartsKissesFix(player, math.ceil(amount / 2))
 			else
-				CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts(player, amount)
+				CustomHealthAPI.Helper.AddRottenHeartsKissesFix(player, amount)
 			end
 		else
-			CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts(player, amount)
+			CustomHealthAPI.Helper.AddRottenHeartsKissesFix(player, amount)
 		end
 	end
 end
 
-function CustomHealthAPI.Helper.AddBasegameMaxHealthWithoutModifiers(player, amount)
+function CustomHealthAPI.Helper.AddMaxHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
 	CustomHealthAPI.PersistentData.OverriddenFunctions.AddMaxHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
+	end
+end
+
+function CustomHealthAPI.Helper.AddBasegameMaxHealthWithoutModifiers(player, amount)
+	CustomHealthAPI.Helper.AddMaxHeartsKissesFix(player, amount)
+end
+
+function CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
+	end
 end
 
 function CustomHealthAPI.Helper.AddBasegameSoulHealthWithoutModifiers(player, amount)
 	if not (CustomHealthAPI.Helper.PlayerIsTheForgotten(player) or CustomHealthAPI.Helper.PlayerIsBethany(player)) then
-		CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts(player, amount)
+		CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, amount)
+	end
+end
+
+function CustomHealthAPI.Helper.AddBlackHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBlackHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
 	end
 end
 
 function CustomHealthAPI.Helper.AddBasegameBlackHealthWithoutModifiers(player, amount)
 	if not (CustomHealthAPI.Helper.PlayerIsTheForgotten(player) or CustomHealthAPI.Helper.PlayerIsBethany(player)) then
-		CustomHealthAPI.PersistentData.OverriddenFunctions.AddBlackHearts(player, amount)
+		CustomHealthAPI.Helper.AddBlackHeartsKissesFix(player, amount)
+	end
+end
+
+function CustomHealthAPI.Helper.AddBoneHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
 	end
 end
 
 function CustomHealthAPI.Helper.AddBasegameBoneHealthWithoutModifiers(player, amount)
 	if not CustomHealthAPI.Helper.PlayerIsTheSoul(player) then
-		CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts(player, amount)
+		CustomHealthAPI.Helper.AddBoneHeartsKissesFix(player, amount)
+	end
+end
+
+function CustomHealthAPI.Helper.AddBrokenHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBrokenHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
 	end
 end
 
 function CustomHealthAPI.Helper.AddBasegameBrokenHealthWithoutModifiers(player, amount)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBrokenHearts(player, amount)
+	CustomHealthAPI.Helper.AddBrokenHeartsKissesFix(player, amount)
+end
+
+function CustomHealthAPI.Helper.AddEternalHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
+	end
 end
 
 function CustomHealthAPI.Helper.AddBasegameEternalHealthWithoutModifiers(player, amount)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts(player, amount)
+	CustomHealthAPI.Helper.AddEternalHeartsKissesFix(player, amount)
+end
+
+function CustomHealthAPI.Helper.AddGoldenHeartsKissesFix(player, amount)
+	local queuedTrinket = nil
+	local queuedTouched = false
+	if player.QueuedItem.Item and 
+	   player.QueuedItem.Item:IsTrinket() and 
+	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	then
+		local queuedItem = player.QueuedItem
+		
+		queuedTrinket = player.QueuedItem.Item
+		queuedTouched = queuedItem.Touched
+		
+		queuedItem.Item = nil
+		queuedItem.Touched = false
+		
+		player.QueuedItem = queuedItem
+	end
+	
+	CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts(player, amount)
+	
+	if queuedTrinket ~= nil then
+		local queuedItem = player.QueuedItem
+		queuedItem.Item = queuedTrinket
+		queuedItem.Touched = queuedTouched
+		player.QueuedItem = queuedItem
+	end
 end
 
 function CustomHealthAPI.Helper.AddBasegameGoldenHealthWithoutModifiers(player, amount)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts(player, amount)
+	CustomHealthAPI.Helper.AddGoldenHeartsKissesFix(player, amount)
+end
+
+function CustomHealthAPI.Helper.GetGreedAndMotherContainers(player)
+	local containers = 0
+
+	if player:HasCollectible(CollectibleType.COLLECTIBLE_GREEDS_GULLET) then
+		local coins = player:GetNumCoins()
+		
+		if coins > 99 then
+			containers = containers + math.floor(coins / 100) + 3
+		elseif coins == 99 then
+			containers = containers + 4
+		else
+			containers = containers + math.max(0, math.floor(coins / 25))
+		end
+	end
+	
+	local numKisses = player:GetTrinketMultiplier(TrinketType.TRINKET_MOTHERS_KISS)
+	containers = containers + numKisses
+	
+	return containers
 end
 
 function CustomHealthAPI.Helper.ClearBasegameHealth(player)
@@ -124,33 +402,45 @@ function CustomHealthAPI.Helper.ClearBasegameHealth(player)
 	local isTheSoul = CustomHealthAPI.Helper.PlayerIsTheSoul(player)
 	local isBethany = CustomHealthAPI.Helper.PlayerIsBethany(player)
 	local isTaintedBethany = CustomHealthAPI.Helper.PlayerIsTaintedBethany(player)
+	local isSoulHeartOnly = CustomHealthAPI.Helper.PlayerIsSoulHeartOnly(player)
 
 	local goldenTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts(player)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts(player, -1 * goldenTotal)
+	CustomHealthAPI.Helper.AddGoldenHeartsKissesFix(player, -1 * goldenTotal)
 	
 	local eternalTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts(player)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts(player, -1 * eternalTotal)
+	CustomHealthAPI.Helper.AddEternalHeartsKissesFix(player, -1 * eternalTotal)
 	
 	if not isTheSoul then
 		if not isTaintedBethany then
 			local redTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player)
-			CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, -1 * redTotal)
+			CustomHealthAPI.Helper.AddHeartsKissesFix(player, -1 * redTotal)
 		end
+		
 		local maxTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts(player)
-		CustomHealthAPI.PersistentData.OverriddenFunctions.AddMaxHearts(player, -1 * maxTotal)
+		if not (isTheForgotten or isTheSoul or isSoulHeartOnly) then
+			local greedAndMotherContainers = CustomHealthAPI.Helper.GetGreedAndMotherContainers(player)
+			CustomHealthAPI.Helper.AddMaxHeartsKissesFix(player, -1 * math.max(0, maxTotal - (greedAndMotherContainers * 2)))
+		else
+			CustomHealthAPI.Helper.AddMaxHeartsKissesFix(player, -1 * maxTotal)
+		end
 	end
 	
 	local brokenTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts(player)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBrokenHearts(player, -1 * brokenTotal)
+	CustomHealthAPI.Helper.AddBrokenHeartsKissesFix(player, -1 * brokenTotal)
 	
 	if not isTheSoul then
 		local boneTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetBoneHearts(player)
-		CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts(player, -1 * boneTotal)
+		if isTheForgotten then
+			local greedAndMotherContainers = CustomHealthAPI.Helper.GetGreedAndMotherContainers(player)
+			CustomHealthAPI.Helper.AddBoneHeartsKissesFix(player, -1 * math.max(0, boneTotal - greedAndMotherContainers))
+		else
+			CustomHealthAPI.Helper.AddBoneHeartsKissesFix(player, -1 * boneTotal)
+		end
 	end
 	
 	if not (isTheForgotten or isBethany) then
 		local soulTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetSoulHearts(player)
-		CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts(player, -1 * soulTotal)
+		CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, -1 * soulTotal)
 	end
 end
 
@@ -158,14 +448,14 @@ function CustomHealthAPI.Helper.ClearBasegameHealthNoOther(player)
 	local isTheSoul = CustomHealthAPI.Helper.PlayerIsTheSoul(player)
 
 	local goldenTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts(player)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts(player, -1 * goldenTotal)
+	CustomHealthAPI.Helper.AddGoldenHeartsKissesFix(player, -1 * goldenTotal)
 	
 	local eternalTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts(player)
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts(player, -1 * eternalTotal)
+	CustomHealthAPI.Helper.AddEternalHeartsKissesFix(player, -1 * eternalTotal)
 	
 	if not isTheSoul then
 		local redTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player)
-		CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts(player, -1 * redTotal)
+		CustomHealthAPI.Helper.AddHeartsKissesFix(player, -1 * redTotal)
 	end
 end
 
@@ -250,9 +540,12 @@ function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 	local redHealth = redHealthTotal - (rottenHealth * 2)
 	
 	local updateFunc = function(player)
-		CustomHealthAPI.Helper.AddBasegameMaxHealthWithoutModifiers(player, maxHealth)
+		local basegameMaxTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts(player)
+		CustomHealthAPI.Helper.AddBasegameMaxHealthWithoutModifiers(player, maxHealth - basegameMaxTotal)
+		
 		CustomHealthAPI.Helper.AddBasegameBrokenHealthWithoutModifiers(player, brokenHealth)
 		
+		local bonesToAdd = 0
 		for i = 1, #otherMasks do
 			local mask = otherMasks[i]
 			for j = 1, #mask do
@@ -264,7 +557,7 @@ function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 				   CustomHealthAPI.PersistentData.HealthDefinitions[key].KindContained ~= CustomHealthAPI.Enums.HealthKinds.NONE and 
 				   CustomHealthAPI.PersistentData.HealthDefinitions[key].MaxHP > 0
 				then
-					CustomHealthAPI.Helper.AddBasegameBoneHealthWithoutModifiers(player, 1)
+					bonesToAdd = bonesToAdd + 1
 				elseif key == "BLACK_HEART" then
 					CustomHealthAPI.Helper.AddBasegameBlackHealthWithoutModifiers(player, (atMax and 2) or 1)
 				elseif CustomHealthAPI.PersistentData.HealthDefinitions[key].Type == CustomHealthAPI.Enums.HealthTypes.SOUL and
@@ -274,6 +567,9 @@ function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 				end
 			end
 		end
+		
+		local basegameBoneTotal = CustomHealthAPI.PersistentData.OverriddenFunctions.GetBoneHearts(player)
+		CustomHealthAPI.Helper.AddBasegameBoneHealthWithoutModifiers(player, bonesToAdd - basegameBoneTotal)
 		
 		CustomHealthAPI.Helper.AddBasegameRottenHealthWithoutModifiers(player, rottenHealth * 2)
 		CustomHealthAPI.Helper.AddBasegameRedHealthWithoutModifiers(player, redHealth)

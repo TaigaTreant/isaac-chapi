@@ -1,4 +1,5 @@
 function CustomHealthAPI.Helper.AddUseCardCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_USE_CARD, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.UseCardCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddUseCardCallback)

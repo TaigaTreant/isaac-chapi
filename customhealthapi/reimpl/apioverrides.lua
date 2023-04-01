@@ -1,6 +1,7 @@
 local isEvaluateCacheFunction = 0
 
 function CustomHealthAPI.Helper.AddPreEvaluateCacheCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_EVALUATE_CACHE, -1 * math.huge, CustomHealthAPI.Mod.PreEvaluateCacheCallback, -1) 
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddPreEvaluateCacheCallback)
@@ -15,6 +16,7 @@ function CustomHealthAPI.Mod:PreEvaluateCacheCallback()
 end
 
 function CustomHealthAPI.Helper.AddPostEvaluateCacheCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_EVALUATE_CACHE, math.huge, CustomHealthAPI.Mod.PostEvaluateCacheCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddPostEvaluateCacheCallback)
@@ -45,247 +47,355 @@ function CustomHealthAPI.Mod:ResetEvaluateCacheCallback()
 	end
 end
 
-if not CustomHealthAPI.PersistentData.OverriddenFunctions then
-	CustomHealthAPI.PersistentData.OverriddenFunctions = {}
+CustomHealthAPI.PersistentData.OverriddenFunctions = CustomHealthAPI.PersistentData.OverriddenFunctions or {}
+CustomHealthAPI.Helper.HookFunctions = {}
 
-	local META, META0
-	local function BeginClass(T)
-		META = {}
-		if type(T) == "function" then
-			META0 = getmetatable(T())
-		else
-			META0 = getmetatable(T).__class
-		end
+local META, META0
+local function BeginClass(T)
+	META = {}
+	if type(T) == "function" then
+		META0 = getmetatable(T())
+	else
+		META0 = getmetatable(T).__class
 	end
+end
 
-	local function EndClass()
-		local oldIndex = META0.__index
-		local newMeta = META
+local function EndClass()
+	local oldIndex = META0.__index
+	local newMeta = META
 		
-		rawset(META0, "__index", function(self, k)
-			return newMeta[k] or oldIndex(self, k)
-		end)
-	end
+	rawset(META0, "__index", function(self, k)
+		return newMeta[k] or oldIndex(self, k)
+	end)
+end
 
-	----------------------
-	-- Entity Overrides --
-	----------------------
-	
+----------------------
+-- Entity Overrides --
+----------------------
+
+if CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamageEntity == nil then
 	BeginClass(Entity)
 	
 	CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamageEntity = META0.TakeDamage
-
 	function META:TakeDamage(amount, flags, source, countdown)
 		return CustomHealthAPI.Helper.HookFunctions.TakeDamageEntity(self, amount, flags, source, countdown)
 	end
 
 	EndClass()
+end
 
-	----------------------------
-	-- EntityPlayer Overrides --
-	----------------------------
+----------------------------
+-- EntityPlayer Overrides --
+----------------------------
 
+if CustomHealthAPI.PersistentData.OverriddenFunctions.AddBlackHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddBrokenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddCollectible == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddMaxHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBlackHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBoneHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickGoldenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRedHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRottenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickSoulHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.ChangePlayerType == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.EvaluateItems == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetBlackHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetBoneHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetEffectiveMaxHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetHeartLimit == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetRottenHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.GetSoulHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHeartsAndSoulHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.IsBlackHeart == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.IsBoneHeart == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.RemoveBlackHeart == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.SetFullHearts == nil or
+   CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamagePlayer == nil
+then
 	BeginClass(EntityPlayer)
-	
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBlackHearts = META0.AddBlackHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts = META0.AddBoneHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddBrokenHearts = META0.AddBrokenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddCollectible = META0.AddCollectible
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts = META0.AddEternalHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts = META0.AddGoldenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts = META0.AddHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddMaxHearts = META0.AddMaxHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts = META0.AddRottenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts = META0.AddSoulHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBlackHearts = META0.CanPickBlackHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBoneHearts = META0.CanPickBoneHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickGoldenHearts = META0.CanPickGoldenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRedHearts = META0.CanPickRedHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRottenHearts = META0.CanPickRottenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickSoulHearts = META0.CanPickSoulHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.ChangePlayerType = META0.ChangePlayerType
-	CustomHealthAPI.PersistentData.OverriddenFunctions.EvaluateItems = META0.EvaluateItems
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetBlackHearts = META0.GetBlackHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetBoneHearts = META0.GetBoneHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts = META0.GetBrokenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetEffectiveMaxHearts = META0.GetEffectiveMaxHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts = META0.GetEternalHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts = META0.GetGoldenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetHeartLimit = META0.GetHeartLimit
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts = META0.GetHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts = META0.GetMaxHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetRottenHearts = META0.GetRottenHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.GetSoulHearts = META0.GetSoulHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHearts = META0.HasFullHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHeartsAndSoulHearts = META0.HasFullHeartsAndSoulHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.IsBlackHeart = META0.IsBlackHeart
-	CustomHealthAPI.PersistentData.OverriddenFunctions.IsBoneHeart = META0.IsBoneHeart
-	CustomHealthAPI.PersistentData.OverriddenFunctions.RemoveBlackHeart = META0.RemoveBlackHeart
-	CustomHealthAPI.PersistentData.OverriddenFunctions.SetFullHearts = META0.SetFullHearts
-	CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamagePlayer = META0.TakeDamage
 
-	function META:AddBlackHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddBlackHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddBlackHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddBlackHearts = META0.AddBlackHearts
+		function META:AddBlackHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddBlackHearts(self, hp)
+		end
 	end
 
-	function META:AddBoneHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddBoneHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddBoneHearts = META0.AddBoneHearts
+		function META:AddBoneHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddBoneHearts(self, hp)
+		end
 	end
 
-	function META:AddBrokenHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddBrokenHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddBrokenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddBrokenHearts = META0.AddBrokenHearts
+		function META:AddBrokenHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddBrokenHearts(self, hp)
+		end
 	end
 
-	function META:AddCollectible(item, charge, firstTimePickingUp, slot, varData)
-		CustomHealthAPI.Helper.HookFunctions.AddCollectible(self, item, charge, firstTimePickingUp, slot, varData)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddCollectible == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddCollectible = META0.AddCollectible
+		function META:AddCollectible(item, charge, firstTimePickingUp, slot, varData)
+			CustomHealthAPI.Helper.HookFunctions.AddCollectible(self, item, charge, firstTimePickingUp, slot, varData)
+		end
 	end
 
-	function META:AddEternalHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddEternalHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddEternalHearts = META0.AddEternalHearts
+		function META:AddEternalHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddEternalHearts(self, hp)
+		end
 	end
 
-	function META:AddGoldenHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddGoldenHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddGoldenHearts = META0.AddGoldenHearts
+		function META:AddGoldenHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddGoldenHearts(self, hp)
+		end
 	end
 
-	function META:AddHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddHearts = META0.AddHearts
+		function META:AddHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddHearts(self, hp)
+		end
 	end
 
-	function META:AddMaxHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddMaxHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddMaxHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddMaxHearts = META0.AddMaxHearts
+		function META:AddMaxHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddMaxHearts(self, hp)
+		end
 	end
 
-	function META:AddRottenHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddRottenHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddRottenHearts = META0.AddRottenHearts
+		function META:AddRottenHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddRottenHearts(self, hp)
+		end
 	end
 
-	function META:AddSoulHearts(hp)
-		CustomHealthAPI.Helper.HookFunctions.AddSoulHearts(self, hp)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.AddSoulHearts = META0.AddSoulHearts
+		function META:AddSoulHearts(hp)
+			CustomHealthAPI.Helper.HookFunctions.AddSoulHearts(self, hp)
+		end
 	end
 
-	function META:CanPickBlackHearts()
-		return CustomHealthAPI.Helper.HookFunctions.CanPickBlackHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBlackHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBlackHearts = META0.CanPickBlackHearts
+		function META:CanPickBlackHearts()
+			return CustomHealthAPI.Helper.HookFunctions.CanPickBlackHearts(self)
+		end
 	end
 
-	function META:CanPickBoneHearts()
-		return CustomHealthAPI.Helper.HookFunctions.CanPickBoneHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBoneHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBoneHearts = META0.CanPickBoneHearts
+		function META:CanPickBoneHearts()
+			return CustomHealthAPI.Helper.HookFunctions.CanPickBoneHearts(self)
+		end
 	end
 
-	function META:CanPickGoldenHearts()
-		return CustomHealthAPI.Helper.HookFunctions.CanPickGoldenHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickGoldenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickGoldenHearts = META0.CanPickGoldenHearts
+		function META:CanPickGoldenHearts()
+			return CustomHealthAPI.Helper.HookFunctions.CanPickGoldenHearts(self)
+		end
 	end
 
-	function META:CanPickRedHearts()
-		return CustomHealthAPI.Helper.HookFunctions.CanPickRedHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRedHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRedHearts = META0.CanPickRedHearts
+		function META:CanPickRedHearts()
+			return CustomHealthAPI.Helper.HookFunctions.CanPickRedHearts(self)
+		end
 	end
 
-	function META:CanPickRottenHearts()
-		return CustomHealthAPI.Helper.HookFunctions.CanPickRottenHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRottenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRottenHearts = META0.CanPickRottenHearts
+		function META:CanPickRottenHearts()
+			return CustomHealthAPI.Helper.HookFunctions.CanPickRottenHearts(self)
+		end
 	end
 
-	function META:CanPickSoulHearts()
-		return CustomHealthAPI.Helper.HookFunctions.CanPickSoulHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickSoulHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickSoulHearts = META0.CanPickSoulHearts
+		function META:CanPickSoulHearts()
+			return CustomHealthAPI.Helper.HookFunctions.CanPickSoulHearts(self)
+		end
 	end
 
-	function META:ChangePlayerType(playertype)
-		return CustomHealthAPI.Helper.HookFunctions.ChangePlayerType(self, playertype)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.ChangePlayerType == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.ChangePlayerType = META0.ChangePlayerType
+		function META:ChangePlayerType(playertype)
+			return CustomHealthAPI.Helper.HookFunctions.ChangePlayerType(self, playertype)
+		end
 	end
 
-	function META:EvaluateItems()
-		return CustomHealthAPI.Helper.HookFunctions.EvaluateItems(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.EvaluateItems == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.EvaluateItems = META0.EvaluateItems
+		function META:EvaluateItems()
+			return CustomHealthAPI.Helper.HookFunctions.EvaluateItems(self)
+		end
 	end
 
-	function META:GetBlackHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetBlackHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetBlackHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetBlackHearts = META0.GetBlackHearts
+		function META:GetBlackHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetBlackHearts(self)
+		end
 	end
 
-	function META:GetBoneHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetBoneHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetBoneHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetBoneHearts = META0.GetBoneHearts
+		function META:GetBoneHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetBoneHearts(self)
+		end
 	end
 
-	function META:GetBrokenHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetBrokenHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts = META0.GetBrokenHearts
+		function META:GetBrokenHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetBrokenHearts(self)
+		end
 	end
 
-	function META:GetEffectiveMaxHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetEffectiveMaxHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetEffectiveMaxHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetEffectiveMaxHearts = META0.GetEffectiveMaxHearts
+		function META:GetEffectiveMaxHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetEffectiveMaxHearts(self)
+		end
 	end
 
-	function META:GetEternalHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetEternalHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetEternalHearts = META0.GetEternalHearts
+		function META:GetEternalHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetEternalHearts(self)
+		end
 	end
 
-	function META:GetGoldenHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetGoldenHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetGoldenHearts = META0.GetGoldenHearts
+		function META:GetGoldenHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetGoldenHearts(self)
+		end
 	end
 
-	function META:GetHeartLimit()
-		return CustomHealthAPI.Helper.HookFunctions.GetHeartLimit(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetHeartLimit == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetHeartLimit = META0.GetHeartLimit
+		function META:GetHeartLimit()
+			return CustomHealthAPI.Helper.HookFunctions.GetHeartLimit(self)
+		end
 	end
 
-	function META:GetHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts = META0.GetHearts
+		function META:GetHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetHearts(self)
+		end
 	end
 
-	function META:GetMaxHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetMaxHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts = META0.GetMaxHearts
+		function META:GetMaxHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetMaxHearts(self)
+		end
 	end
 
-	function META:GetRottenHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetRottenHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetRottenHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetRottenHearts = META0.GetRottenHearts
+		function META:GetRottenHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetRottenHearts(self)
+		end
 	end
 
-	function META:GetSoulHearts()
-		return CustomHealthAPI.Helper.HookFunctions.GetSoulHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.GetSoulHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.GetSoulHearts = META0.GetSoulHearts
+		function META:GetSoulHearts()
+			return CustomHealthAPI.Helper.HookFunctions.GetSoulHearts(self)
+		end
 	end
 
-	function META:HasFullHearts()
-		return CustomHealthAPI.Helper.HookFunctions.HasFullHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHearts = META0.HasFullHearts
+		function META:HasFullHearts()
+			return CustomHealthAPI.Helper.HookFunctions.HasFullHearts(self)
+		end
 	end
 
-	function META:HasFullHeartsAndSoulHearts()
-		return CustomHealthAPI.Helper.HookFunctions.HasFullHeartsAndSoulHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHeartsAndSoulHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.HasFullHeartsAndSoulHearts = META0.HasFullHeartsAndSoulHearts
+		function META:HasFullHeartsAndSoulHearts()
+			return CustomHealthAPI.Helper.HookFunctions.HasFullHeartsAndSoulHearts(self)
+		end
 	end
 
-	function META:IsBlackHeart(heart)
-		return CustomHealthAPI.Helper.HookFunctions.IsBlackHeart(self, heart)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.IsBlackHeart == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.IsBlackHeart = META0.IsBlackHeart
+		function META:IsBlackHeart(heart)
+			return CustomHealthAPI.Helper.HookFunctions.IsBlackHeart(self, heart)
+		end
 	end
 
-	function META:IsBoneHeart(heart)
-		return CustomHealthAPI.Helper.HookFunctions.IsBoneHeart(self, heart)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.IsBoneHeart == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.IsBoneHeart = META0.IsBoneHeart
+		function META:IsBoneHeart(heart)
+			return CustomHealthAPI.Helper.HookFunctions.IsBoneHeart(self, heart)
+		end
 	end
 
-	function META:RemoveBlackHeart(heart)
-		CustomHealthAPI.Helper.HookFunctions.RemoveBlackHeart(self, heart)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.RemoveBlackHeart == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.RemoveBlackHeart = META0.RemoveBlackHeart
+		function META:RemoveBlackHeart(heart)
+			CustomHealthAPI.Helper.HookFunctions.RemoveBlackHeart(self, heart)
+		end
 	end
 
-	function META:SetFullHearts()
-		CustomHealthAPI.Helper.HookFunctions.SetFullHearts(self)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.SetFullHearts == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.SetFullHearts = META0.SetFullHearts
+		function META:SetFullHearts()
+			CustomHealthAPI.Helper.HookFunctions.SetFullHearts(self)
+		end
 	end
 
-	function META:TakeDamage(amount, flags, source, countdown)
-		return CustomHealthAPI.Helper.HookFunctions.TakeDamagePlayer(self, amount, flags, source, countdown)
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamagePlayer == nil then
+		CustomHealthAPI.PersistentData.OverriddenFunctions.TakeDamagePlayer = META0.TakeDamage
+		function META:TakeDamage(amount, flags, source, countdown)
+			return CustomHealthAPI.Helper.HookFunctions.TakeDamagePlayer(self, amount, flags, source, countdown)
+		end
 	end
 
 	EndClass()
-	
-	-------------------
-	-- HUD Overrides --
-	-------------------
-	
-	BeginClass(HUD)
-	
-	CustomHealthAPI.PersistentData.OverriddenFunctions.RenderHUD = META0.Render
+end
 
+-------------------
+-- HUD Overrides --
+-------------------
+
+if CustomHealthAPI.PersistentData.OverriddenFunctions.RenderHUD == nil then
+	BeginClass(HUD)
+
+	CustomHealthAPI.PersistentData.OverriddenFunctions.RenderHUD = META0.Render
 	function META:Render()
 		CustomHealthAPI.Helper.HookFunctions.RenderHUD(self)
 	end
 
 	EndClass()
 end
-
-CustomHealthAPI.Helper.HookFunctions = {}
 
 ----------------------------
 -- EntityPlayer Overrides --

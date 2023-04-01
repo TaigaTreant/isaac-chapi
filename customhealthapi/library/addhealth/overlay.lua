@@ -46,7 +46,7 @@ function CustomHealthAPI.Helper.HandleGoldenRoom(p, doGoldEffects)
 	end
 end
 
-function CustomHealthAPI.Helper.TriggerGoldHearts(p, numTrigger)
+function CustomHealthAPI.Helper.TriggerGoldHeartsOld(p, numTrigger)
 	local player = p
 	local originalPosition = player.Position
 	if CustomHealthAPI.Helper.PlayerIsTheForgotten(player) then
@@ -186,4 +186,53 @@ function CustomHealthAPI.Helper.TriggerGoldHearts(p, numTrigger)
 	end
 	
 	player.Position = originalPosition
+end
+
+function CustomHealthAPI.Helper.TriggerGoldHearts(p, numTrigger)
+	local burst = Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, p.Position, Vector(0, 0), p):ToEffect()
+	local burstSprite = burst:GetSprite()
+	burstSprite:Load("gfx/293.000_ultragreedcoins.anm2", true)
+	burstSprite:Play("CrumbleNoDebris", true)
+	burst:Update()
+	
+	local crater = Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.BOMB_CRATER, 0, p.Position, Vector(0, 0), p):ToEffect()
+	local craterColor = Color(1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0)
+	craterColor:SetColorize(10.0, 7.5, 0.0, 1.0)
+	crater:SetColor(craterColor, 99999999, 1, false, false)
+	crater:Update()
+	
+	local rng = p:GetDropRNG()
+	for i = 1, numTrigger do
+		Game():SpawnParticles(p.Position, EffectVariant.GOLD_PARTICLE, 10, 
+		                      math.random() * 12.0 + 8.0, 
+		                      Color(1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0), 
+		                      0)
+		
+		for j = 1, rng:RandomInt(6) + 3 do
+			local randvec = Vector.FromAngle(math.random() * 360) * (math.random() * 3.5 + 1.5)
+			local coin = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COIN, 0, p.Position + randvec, randvec, p):ToPickup()
+		end
+	end
+	
+	local midasDuration = 180 * (p:GetTrinketMultiplier(TrinketType.TRINKET_SECOND_HAND) + 1)
+	for _, ent in ipairs(Isaac.FindInRadius(p.Position, 80.0, EntityPartition.ENEMY)) do
+		if ent:ToNPC() and 
+		   not (ent:HasEntityFlags(EntityFlag.FLAG_NO_STATUS_EFFECTS) or
+		        ent:HasEntityFlags(EntityFlag.FLAG_NO_TARGET))
+		then
+			local alreadyHasMidas = ent:HasEntityFlags(EntityFlag.FLAG_MIDAS_FREEZE)
+			ent:AddMidasFreeze(EntityRef(p), midasDuration)
+			
+			if ent:IsBoss() and
+			   (alreadyHasMidas or not ent:HasEntityFlags(EntityFlag.FLAG_MIDAS_FREEZE))
+			then
+				-- fuck status resistance
+			end
+			
+			local flashColor = Color(1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.0)
+			ent:SetColor(flashColor, 15, 255, true, true)
+		end
+	end
+	
+	SFXManager():Play(SoundEffect.SOUND_ULTRA_GREED_COIN_DESTROY)
 end

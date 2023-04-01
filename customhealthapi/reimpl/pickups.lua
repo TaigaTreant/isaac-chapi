@@ -1,4 +1,21 @@
+function CustomHealthAPI.Helper.AddHeartSpikesCostCallback()
+---@diagnostic disable-next-line: param-type-mismatch
+	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PRE_PICKUP_COLLISION, -1 * math.huge, CustomHealthAPI.Mod.HeartSpikesCostCallback, PickupVariant.PICKUP_HEART)
+end
+table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHeartSpikesCostCallback)
+
+function CustomHealthAPI.Helper.RemoveHeartSpikesCostCallback()
+	CustomHealthAPI.Mod:RemoveCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, CustomHealthAPI.Mod.HeartSpikesCostCallback)
+end
+table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemoveHeartSpikesCostCallback)
+
+function CustomHealthAPI.Mod:HeartSpikesCostCallback(pickup, collider)
+	local data = pickup:GetData()
+	data.CHAPIHeartPickupSpentSpikesCostAlready = nil
+end
+
 function CustomHealthAPI.Helper.AddHeartCollisionCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PRE_PICKUP_COLLISION, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.HeartCollisionCallback, PickupVariant.PICKUP_HEART)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHeartCollisionCallback)
@@ -327,6 +344,260 @@ function CustomHealthAPI.Helper.CheckIfBoneShouldUseCustomLogic(player, hp)
 	return true
 end
 
+function CustomHealthAPI.Library.GetRedHPToBeSpent(p, hpToAdd)
+	local player = p:ToPlayer()
+	if player == nil then
+		return 0
+	end
+	
+	local playerType = player:GetPlayerType()
+	if playerType == PlayerType.PLAYER_BETHANY_B then
+		if player:CanPickRedHearts() then
+			local bloodChargeToMax = 99 - player:GetBloodCharge()
+			return math.min(bloodChargeToMax, hpToAdd)
+		end
+		
+		return 0
+	elseif playerType == PlayerType.PLAYER_THESOUL then
+		player = player:GetSubPlayer()
+		if player == nil then
+			return 0
+		end
+	end
+	
+	if player:CanPickRedHearts() then
+		local hpData = player:GetData().CustomHealthAPISavedata
+		if hpData ~= nil then
+			local redMasks = hpData.RedHealthMasks
+			local addPriorityOfRed = CustomHealthAPI.PersistentData.HealthDefinitions["RED_HEART"].AddPriority
+			local hpToOverwrite = 0
+			local customMissingRed = 0
+			for i = 1, #redMasks do
+				local mask = redMasks[i]
+				for j = 1, #mask do
+					local health = mask[j]
+					if health.Key ~= "RED_HEART" and
+					   addPriorityOfRed >= CustomHealthAPI.PersistentData.HealthDefinitions[health.Key].AddPriority
+					then
+						hpToOverwrite = hpToOverwrite + 2
+					else
+						local maxHP = CustomHealthAPI.PersistentData.HealthDefinitions[health.Key].MaxHP
+						customMissingRed = customMissingRed + (maxHP - health.HP)
+					end
+				end
+			end
+			
+			local customUnoccupiedRedCapacity = CustomHealthAPI.Helper.GetAmountUnoccupiedContainers(player) * 2
+			local customRedToFullHealth = customMissingRed + customUnoccupiedRedCapacity
+			
+			return math.min(customRedToFullHealth + hpToOverwrite, hpToAdd)
+		end
+	end
+	
+	return 0
+end
+
+function CustomHealthAPI.Library.GetSoulHPToBeSpent(p, hpToAdd, heartKey)
+	local player = p:ToPlayer()
+	if player == nil then
+		return 0
+	end
+	
+	local maxHpOfSoul = math.max(2, CustomHealthAPI.Library.GetInfoOfKey(heartKey, "MaxHP"))
+	
+	local playerType = player:GetPlayerType()
+	if playerType == PlayerType.PLAYER_BETHANY then
+		if player:CanPickSoulHearts() then
+			local numShacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
+			local hpSpentReactivatingShackles = math.max(0, maxHpOfSoul * numShacklesDisabled)
+	
+			local alabasterChargesToAdd = 0
+			for i = 0, 2 do
+				if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
+					alabasterChargesToAdd = alabasterChargesToAdd + (12 - player:GetActiveCharge(i))
+				end
+			end
+			
+			local soulChargeToMax = 99 - player:GetSoulCharge()
+			return math.min(soulChargeToMax + alabasterChargesToAdd + hpSpentReactivatingShackles, hpToAdd)
+		end
+		
+		return 0
+	elseif playerType == PlayerType.PLAYER_THELOST or playerType == PlayerType.PLAYER_THELOST_B or 
+	       playerType == PlayerType.PLAYER_KEEPER or playerType == PlayerType.PLAYER_KEEPER_B
+	then
+		local numShacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
+		local hpSpentReactivatingShackles = math.max(0, maxHpOfSoul * numShacklesDisabled)
+	
+		local alabasterChargesToAdd = 0
+		for i = 0, 2 do
+			if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
+				alabasterChargesToAdd = alabasterChargesToAdd + (12 - player:GetActiveCharge(i))
+			end
+		end
+		
+		return alabasterChargesToAdd + hpSpentReactivatingShackles
+	elseif playerType == PlayerType.PLAYER_THEFORGOTTEN then
+		player = player:GetSubPlayer()
+		if player == nil then
+			player = p:ToPlayer()
+
+			local numShacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
+			local hpSpentReactivatingShackles = math.max(0, maxHpOfSoul * numShacklesDisabled)
+		
+			local alabasterChargesToAdd = 0
+			for i = 0, 2 do
+				if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
+					alabasterChargesToAdd = alabasterChargesToAdd + (12 - player:GetActiveCharge(i))
+				end
+			end
+			
+			return alabasterChargesToAdd + hpSpentReactivatingShackles
+		end
+	end
+	
+	if CustomHealthAPI.Library.CanPickKey(player, heartKey) then
+		local hpData = player:GetData().CustomHealthAPISavedata
+		if hpData ~= nil then
+			local numShacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
+			local hpSpentReactivatingShackles = math.max(0, maxHpOfSoul * numShacklesDisabled)
+	
+			local alabasterChargesToAdd = 0
+			for i = 0, 2 do
+				if player:GetActiveItem(i) == CollectibleType.COLLECTIBLE_ALABASTER_BOX then
+					alabasterChargesToAdd = alabasterChargesToAdd + (12 - player:GetActiveCharge(i))
+				end
+			end
+			
+			local otherMasks = hpData.OtherHealthMasks
+			local addPriorityOfSoul = CustomHealthAPI.PersistentData.HealthDefinitions[heartKey].AddPriority
+			local hpToOverwrite = 0
+			local customMissingSoul = 0
+			for i = 1, #otherMasks do
+				local mask = otherMasks[i]
+				for j = 1, #mask do
+					local health = mask[j]
+					if CustomHealthAPI.Library.GetInfoOfHealth(health, "Type") == CustomHealthAPI.Enums.HealthTypes.SOUL then
+						if health.Key ~= heartKey and
+						   addPriorityOfSoul >= CustomHealthAPI.PersistentData.HealthDefinitions[health.Key].AddPriority
+						then
+							hpToOverwrite = hpToOverwrite + maxHpOfSoul
+						else
+							local maxHP = CustomHealthAPI.PersistentData.HealthDefinitions[health.Key].MaxHP
+							customMissingSoul = customMissingSoul + (maxHP - health.HP)
+						end
+					end
+				end
+			end
+			
+			local customUnoccupiedSoulCapacity = CustomHealthAPI.Helper.GetRoomForOtherKeys(player) * math.max(2, CustomHealthAPI.PersistentData.HealthDefinitions[heartKey].MaxHP)
+			local customSoulToFullHealth = customMissingSoul + customUnoccupiedSoulCapacity
+			
+			return math.min(customSoulToFullHealth + hpToOverwrite + alabasterChargesToAdd + hpSpentReactivatingShackles, hpToAdd)
+		end
+	end
+	
+	return 0
+end
+
+function CustomHealthAPI.Library.AddCandyHeartBonus(pl, candiesToAdd, seed)
+	local player = pl:ToPlayer()
+	if player == nil then
+		return
+	end
+
+	if player:HasCollectible(CollectibleType.COLLECTIBLE_CANDY_HEART) and candiesToAdd > 0 then
+		local rng = RNG()
+		rng:SetSeed(seed, 35)
+		
+		local p = player
+		player:GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
+		local pdata = player:GetData().CustomHealthAPIPersistent
+		
+		if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
+			if player:GetOtherTwin() ~= nil then
+				local p = player:GetOtherTwin()
+				player:GetOtherTwin():GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
+				pdata = player:GetOtherTwin():GetData().CustomHealthAPIPersistent
+			end
+		end
+		
+		for i = 1, candiesToAdd do
+			local rand = math.random(1, 6)
+			if rand == 1 then
+				pdata.FakeCandyHeartDamage = (pdata.FakeCandyHeartDamage or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_DAMAGE)
+			elseif rand == 2 then
+				pdata.FakeCandyHeartTears = (pdata.FakeCandyHeartTears or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
+			elseif rand == 3 then
+				pdata.FakeCandyHeartSpeed = (pdata.FakeCandyHeartSpeed or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_SPEED)
+			elseif rand == 4 then
+				pdata.FakeCandyHeartShotSpeed = (pdata.FakeCandyHeartShotSpeed or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_SHOTSPEED)
+			elseif rand == 5 then
+				pdata.FakeCandyHeartRange = (pdata.FakeCandyHeartRange or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_RANGE)
+			else
+				pdata.FakeCandyHeartLuck = (pdata.FakeCandyHeartLuck or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_LUCK)
+			end
+		end
+
+		p:EvaluateItems()
+	end
+end
+
+function CustomHealthAPI.Library.AddSoulLocketBonus(pl, locketsToAdd, seed)
+	local player = pl:ToPlayer()
+	if player == nil then
+		return
+	end
+
+	if player:HasCollectible(CollectibleType.COLLECTIBLE_SOUL_LOCKET) and locketsToAdd > 0 then
+		local rng = RNG()
+		rng:SetSeed(seed, 40)
+		
+		local p = player
+		player:GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
+		local pdata = player:GetData().CustomHealthAPIPersistent
+		
+		if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
+			if player:GetOtherTwin() ~= nil then
+				local p = player:GetOtherTwin()
+				player:GetOtherTwin():GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
+				pdata = player:GetOtherTwin():GetData().CustomHealthAPIPersistent
+			end
+		end
+		
+		for i = 1, locketsToAdd do
+			local rand = math.random(1, 6)
+			if rand == 1 then
+				pdata.FakeSoulLocketDamage = (pdata.FakeSoulLocketDamage or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_DAMAGE)
+			elseif rand == 2 then
+				pdata.FakeSoulLocketTears = (pdata.FakeSoulLocketTears or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
+			elseif rand == 3 then
+				pdata.FakeSoulLocketSpeed = (pdata.FakeSoulLocketSpeed or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_SPEED)
+			elseif rand == 4 then
+				pdata.FakeSoulLocketShotSpeed = (pdata.FakeSoulLocketShotSpeed or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_SHOTSPEED)
+			elseif rand == 5 then
+				pdata.FakeSoulLocketRange = (pdata.FakeSoulLocketRange or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_RANGE)
+			else
+				pdata.FakeSoulLocketLuck = (pdata.FakeSoulLocketLuck or 0) + 1
+				p:AddCacheFlags(CacheFlag.CACHE_LUCK)
+			end
+		end
+
+		p:EvaluateItems()
+	end
+end
+
 function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 	if collider.Type == EntityType.ENTITY_PLAYER then
 		local player = collider:ToPlayer()
@@ -337,6 +608,7 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 		local canJarRedHearts = player:HasCollectible(CollectibleType.COLLECTIBLE_THE_JAR) and player:GetJarHearts() < 8
 		local hasSodomApple = player:HasTrinket(TrinketType.TRINKET_APPLE_OF_SODOM)
 		
+		local data = pickup:GetData()
 		if hearttype < 1 or 
 		   hearttype > 12 or 
 		   player:GetPlayerType() == PlayerType.PLAYER_THELOST or 
@@ -345,7 +617,10 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 			return
 		elseif player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B and CustomHealthAPI.Helper.IsHoldingTaintedForgotten(player) then
 			return CustomHealthAPI.Mod:HeartCollisionCallback(pickup, player:GetOtherTwin())
-		elseif pickup:IsShopItem() and (pickup.Price > player:GetNumCoins() or not player:IsExtraAnimationFinished()) then
+		elseif pickup:IsShopItem() and 
+		       (pickup.Price > player:GetNumCoins() or 
+			    (not player:IsExtraAnimationFinished() and not data.CHAPIHeartPickupSpentSpikesCostAlready))
+		then
 			return true
 		elseif sprite:IsPlaying("Collect") then
 			return true
@@ -359,7 +634,7 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 			local redHealthBefore = player:GetHearts()
 			local soulHealthBefore = player:GetSoulHearts()
 			
-			if pickup.Price == PickupPrice.PRICE_SPIKES then
+			if pickup.Price == PickupPrice.PRICE_SPIKES and not data.CHAPIHeartPickupSpentSpikesCostAlready then
 ---@diagnostic disable-next-line: param-type-mismatch
 				local tookDamage = player:TakeDamage(2.0, 268435584, EntityRef(nil), 30)
 				if not tookDamage then
@@ -459,18 +734,24 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 			elseif hearttype == HeartSubType.HEART_BLENDED and 
 			       (CustomHealthAPI.Helper.CanPickKey(player, "RED_HEART") or CustomHealthAPI.Helper.CanPickKey(player, "SOUL_HEART"))
 			then
-				for i = 1, 2 do
-					if CustomHealthAPI.Helper.CanPickKey(player, "RED_HEART") then
-					local hp = 1
-						if redIsDoubled then
-							hp = hp * 2
-						end
-						CustomHealthAPI.Library.AddHealth(player, "RED_HEART", hp, true)
-						SFXManager():Play(SoundEffect.SOUND_BOSS2_BUBBLES, 1, 0, false, 1.0)
-					elseif CustomHealthAPI.Helper.CanPickKey(player, "SOUL_HEART") then
-						CustomHealthAPI.Library.AddHealth(player, "SOUL_HEART", 1, true)
-						SFXManager():Play(SoundEffect.SOUND_HOLY, 1, 0, false, 1.0)
+				local hp = 2
+				if CustomHealthAPI.Helper.CanPickKey(player, "RED_HEART") then
+					if redIsDoubled then
+						hp = hp * 2
 					end
+					local hpToSpend = CustomHealthAPI.Library.GetRedHPToBeSpent(player, hp)
+					if hpToSpend > 0 then
+						CustomHealthAPI.Library.AddHealth(player, "RED_HEART", hpToSpend, true)
+						SFXManager():Play(SoundEffect.SOUND_BOSS2_BUBBLES, 1, 0, false, 1.0)
+						hp = hp - hpToSpend
+					end
+					if redIsDoubled then
+						hp = math.floor(hp / 2)
+					end
+				end
+				if CustomHealthAPI.Helper.CanPickKey(player, "SOUL_HEART") and hp > 0 then
+					CustomHealthAPI.Library.AddHealth(player, "SOUL_HEART", hp, true)
+					SFXManager():Play(SoundEffect.SOUND_HOLY, 1, 0, false, 1.0)
 				end
 			elseif hearttype == HeartSubType.HEART_BONE and CustomHealthAPI.Helper.CanPickKey(player, "BONE_HEART") then
 				CustomHealthAPI.Library.AddHealth(player, "BONE_HEART", 1, true)
@@ -537,93 +818,8 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 			local redHealthAfter = player:GetHearts()
 			local soulHealthAfter = player:GetSoulHearts()
 			
-			if player:HasCollectible(CollectibleType.COLLECTIBLE_CANDY_HEART) and redHealthAfter > redHealthBefore then
-				local candiesToAdd = redHealthAfter - redHealthBefore
-				
-				local rng = RNG()
-				rng:SetSeed(pickup.InitSeed, 35)
-				
-				local p = player
-				player:GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
-				local pdata = player:GetData().CustomHealthAPIPersistent
-				
-				if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
-					if player:GetOtherTwin() ~= nil then
-						local p = player:GetOtherTwin()
-						player:GetOtherTwin():GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
-						pdata = player:GetOtherTwin():GetData().CustomHealthAPIPersistent
-					end
-				end
-				
-				for i = 1, candiesToAdd do
-					local rand = math.random(1, 6)
-					if rand == 1 then
-						pdata.FakeCandyHeartDamage = (pdata.FakeCandyHeartDamage or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_DAMAGE)
-					elseif rand == 2 then
-						pdata.FakeCandyHeartTears = (pdata.FakeCandyHeartTears or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
-					elseif rand == 3 then
-						pdata.FakeCandyHeartSpeed = (pdata.FakeCandyHeartSpeed or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_SPEED)
-					elseif rand == 4 then
-						pdata.FakeCandyHeartShotSpeed = (pdata.FakeCandyHeartShotSpeed or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_SHOTSPEED)
-					elseif rand == 5 then
-						pdata.FakeCandyHeartRange = (pdata.FakeCandyHeartRange or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_RANGE)
-					else
-						pdata.FakeCandyHeartLuck = (pdata.FakeCandyHeartLuck or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_LUCK)
-					end
-				end
-	
-				p:EvaluateItems()
-			end
-			
-			if player:HasCollectible(CollectibleType.COLLECTIBLE_SOUL_LOCKET) and soulHealthAfter > soulHealthBefore then
-				local locketsToAdd = soulHealthAfter - soulHealthBefore
-				
-				local rng = RNG()
-				rng:SetSeed(pickup.InitSeed, 40)
-				
-				local p = player
-				player:GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
-				local pdata = player:GetData().CustomHealthAPIPersistent
-				
-				if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
-					if player:GetOtherTwin() ~= nil then
-						local p = player:GetOtherTwin()
-						player:GetOtherTwin():GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
-						pdata = player:GetOtherTwin():GetData().CustomHealthAPIPersistent
-					end
-				end
-				
-				for i = 1, locketsToAdd do
-					local rand = math.random(1, 6)
-					if rand == 1 then
-						pdata.FakeSoulLocketDamage = (pdata.FakeSoulLocketDamage or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_DAMAGE)
-					elseif rand == 2 then
-						pdata.FakeSoulLocketTears = (pdata.FakeSoulLocketTears or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_FIREDELAY)
-					elseif rand == 3 then
-						pdata.FakeSoulLocketSpeed = (pdata.FakeSoulLocketSpeed or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_SPEED)
-					elseif rand == 4 then
-						pdata.FakeSoulLocketShotSpeed = (pdata.FakeSoulLocketShotSpeed or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_SHOTSPEED)
-					elseif rand == 5 then
-						pdata.FakeSoulLocketRange = (pdata.FakeSoulLocketRange or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_RANGE)
-					else
-						pdata.FakeSoulLocketLuck = (pdata.FakeSoulLocketLuck or 0) + 1
-						p:AddCacheFlags(CacheFlag.CACHE_LUCK)
-					end
-				end
-	
-				p:EvaluateItems()
-			end
+			CustomHealthAPI.Library.AddCandyHeartBonus(player, redHealthAfter - redHealthBefore, pickup.InitSeed)
+			CustomHealthAPI.Library.AddSoulLocketBonus(player, soulHealthAfter - soulHealthBefore, pickup.InitSeed)
 
 			if pickup.OptionsPickupIndex ~= 0 then
 				local pickups = Isaac.FindByType(EntityType.ENTITY_PICKUP)
@@ -718,6 +914,7 @@ local function tearsUp(firedelay, val)
 end
 
 function CustomHealthAPI.Helper.AddCandiesAndLocketsCacheCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_EVALUATE_CACHE, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.CandiesAndLocketsCacheCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddCandiesAndLocketsCacheCallback)
@@ -753,6 +950,7 @@ function CustomHealthAPI.Mod:CandiesAndLocketsCacheCallback(player, flag)
 end
 
 function CustomHealthAPI.Helper.AddClearCandiesAndLocketsCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PRE_USE_ITEM, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.ClearCandiesAndLocketsCallback, CollectibleType.COLLECTIBLE_D4)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddClearCandiesAndLocketsCallback)

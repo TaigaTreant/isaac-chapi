@@ -236,11 +236,13 @@ function CustomHealthAPI.Library.DefineContainerForRedHealth(redKey, containerKe
 end
 
 function CustomHealthAPI.Library.RegisterCharacterAsRedHealthless(playertype)
-	CustomHealthAPI.PersistentData.CharactersThatCantHaveRedHealth[playertype] = true
+    --disabling as this is currently untested for modded characters
+	--CustomHealthAPI.PersistentData.CharactersThatCantHaveRedHealth[playertype] = true
 end
 
 function CustomHealthAPI.Library.RegisterCharacterAsConvertingMaxHealth(playertype, keyToConvertTo)
-	CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[playertype] = keyToConvertTo
+    --disabling as this is currently untested for modded characters
+	--CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[playertype] = keyToConvertTo
 end
 
 function CustomHealthAPI.Library.GetInfoOfKey(key, var)

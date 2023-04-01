@@ -169,18 +169,13 @@ local function getFireRateMultiplier(player)
 			if fireDirection == Direction.NO_DIRECTION or
 			   (odata.PreviousEpiphoraDirection ~= Direction.NO_DIRECTION and fireDirection ~= odata.PreviousEpiphoraDirection)
 			then
-				-- do nothing
-				print("Z", fireDirection)
 				odata.EpiphoraStart = Game():GetFrameCount()
 			elseif Game():GetFrameCount() - (odata.EpiphoraStart or 0) >= 270 then
 				multi = multi * 2
-				print("C", Game():GetFrameCount() - (odata.EpiphoraStart or 0))
 			elseif Game():GetFrameCount() - (odata.EpiphoraStart or 0) >= 180 then
 				multi = multi * 1.66
-				print("B", Game():GetFrameCount() - (odata.EpiphoraStart or 0))
 			elseif Game():GetFrameCount() - (odata.EpiphoraStart or 0) >= 90 then
 				multi = multi * 1.33
-				print("A", Game():GetFrameCount() - (odata.EpiphoraStart or 0))
 			end
 			odata.PreviousEpiphoraDirection = fireDirection
 		end
@@ -197,6 +192,7 @@ local cachedHallowPoopIndices = {}
 local lastTimeCachedHallowPoops = nil
 
 function CustomHealthAPI.Helper.AddHallowPlayerCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PLAYER_UPDATE, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.HallowPlayerCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHallowPlayerCallback)
@@ -242,6 +238,7 @@ function CustomHealthAPI.Mod:HallowPlayerCallback(player)
 end
 
 function CustomHealthAPI.Helper.AddHallowRoomCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.HallowRoomCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHallowRoomCallback)
@@ -257,6 +254,7 @@ function CustomHealthAPI.Mod:HallowRoomCallback()
 end
 
 function CustomHealthAPI.Helper.AddHallowPeffectCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PEFFECT_UPDATE, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.HallowPeffectCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHallowPeffectCallback)
@@ -320,6 +318,7 @@ function CustomHealthAPI.Mod:HallowPeffectCallback(player)
 end
 
 function CustomHealthAPI.Helper.AddBrittleBonesCacheCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_EVALUATE_CACHE, -1 * math.huge, CustomHealthAPI.Mod.BrittleBonesCacheCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddBrittleBonesCacheCallback)

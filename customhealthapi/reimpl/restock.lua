@@ -265,6 +265,7 @@ function CustomHealthAPI.Helper.TryRemoveStoreCredit(player)
 end
 
 function CustomHealthAPI.Helper.AddUpdatePickupPriceCallback()
+---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PICKUP_UPDATE, CustomHealthAPI.Enums.CallbackPriorities.LATE, CustomHealthAPI.Mod.UpdatePickupPriceCallback, -1)
 end
 table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddUpdatePickupPriceCallback)
