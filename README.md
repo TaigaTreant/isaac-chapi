@@ -1,5 +1,5 @@
 # Custom Health API
-A rewrite of the HP system of The Binding of Isaac: Repentance into Lua, allowing for expansion of API features and the adding of new custom HP types by modders.
+A rewrite of the HP system of The Binding of Isaac: Repentance into Lua, allowing for expansion of API features in regards to player health and the adding of new custom HP types by modders.
 
 To add to your project, complete the following steps:
 1) Extract the "resources" folder into the root directory of your Isaac mod.
