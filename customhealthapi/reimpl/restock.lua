@@ -244,10 +244,10 @@ function CustomHealthAPI.Helper.TryRemoveStoreCredit(player)
 	local t0 = player:GetTrinket(0)
 	local t1 = player:GetTrinket(1)
 	
-	if t0 % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_STORE_CREDIT then
+	if t0 & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_STORE_CREDIT then
 		player:TryRemoveTrinket(TrinketType.TRINKET_STORE_CREDIT)
 		return
-	elseif t1 % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_STORE_CREDIT then
+	elseif t1 & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_STORE_CREDIT then
 		player:TryRemoveTrinket(TrinketType.TRINKET_STORE_CREDIT)
 		return
 	end

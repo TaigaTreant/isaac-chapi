@@ -37,8 +37,18 @@ function CustomHealthAPI.Mod:ProcessTakeDamageCallback(ent, amount, flags, sourc
 	
 	local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_PLAYER_DAMAGE)
 	for _, callback in ipairs(callbacks) do
-		local prevent = callback.Function(player, amount, flags, source, countdown)
-		if prevent ~= nil then
+		local returnTable = callback.Function(player, amount, flags, source, countdown)
+		if type(returnTable) == "table" then
+			if returnTable.Amount ~= nil then
+				amount = returnTable.Amount
+			end
+			if returnTable.Flags ~= nil then
+				flags = returnTable.Flags
+			end
+			if returnTable.Prevent ~= nil then
+				return false
+			end
+		elseif returnTable ~= nil then
 			return false
 		end
 	end

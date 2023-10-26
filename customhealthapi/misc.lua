@@ -64,7 +64,7 @@ function CustomHealthAPI.Helper.AddHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -109,7 +109,7 @@ function CustomHealthAPI.Helper.AddRottenHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -151,7 +151,7 @@ function CustomHealthAPI.Helper.AddMaxHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -183,7 +183,7 @@ function CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -217,7 +217,7 @@ function CustomHealthAPI.Helper.AddBlackHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -251,7 +251,7 @@ function CustomHealthAPI.Helper.AddBoneHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -285,7 +285,7 @@ function CustomHealthAPI.Helper.AddBrokenHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -317,7 +317,7 @@ function CustomHealthAPI.Helper.AddEternalHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -349,7 +349,7 @@ function CustomHealthAPI.Helper.AddGoldenHeartsKissesFix(player, amount)
 	local queuedTouched = false
 	if player.QueuedItem.Item and 
 	   player.QueuedItem.Item:IsTrinket() and 
-	   player.QueuedItem.Item.ID % TrinketType.TRINKET_GOLDEN_FLAG == TrinketType.TRINKET_MOTHERS_KISS
+	   player.QueuedItem.Item.ID & TrinketType.TRINKET_ID_MASK == TrinketType.TRINKET_MOTHERS_KISS
 	then
 		local queuedItem = player.QueuedItem
 		
@@ -578,6 +578,15 @@ function CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 	end
 	
 	CustomHealthAPI.Helper.HandleBasegameHealthStateUpdate(player, updateFunc)
+	
+	data.Cached = {}
+	
+	CustomHealthAPI.PersistentData.PreventResyncing = true
+	local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_UPDATE_HEALTH_STATE)
+	for _, callback in ipairs(callbacks) do
+		callback.Function(player, key, hp)
+	end
+	CustomHealthAPI.PersistentData.PreventResyncing = false
 end
 
 function CustomHealthAPI.Helper.UpdateBasegameHealthStateNoOther(player)
@@ -608,6 +617,15 @@ function CustomHealthAPI.Helper.UpdateBasegameHealthStateNoOther(player)
 	if challengeIsHaveAHeart then
 		Game().Challenge = Challenge.CHALLENGE_HAVE_A_HEART
 	end
+	
+	data.Cached = {}
+	
+	CustomHealthAPI.PersistentData.PreventResyncing = true
+	local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_UPDATE_HEALTH_STATE)
+	for _, callback in ipairs(callbacks) do
+		callback.Function(player, key, hp)
+	end
+	CustomHealthAPI.PersistentData.PreventResyncing = false
 end
 
 function CustomHealthAPI.Helper.CanAffordPickup(player, pickup)

@@ -1,4 +1,4 @@
-local version = 0.949
+local version = 0.951
 
 local root = "" -- Replace with the location of the 'customhealthapi' folder in your mod (e.g. "modscripts.dependencies.customhealthapi.")
 local modname = "" -- Replace with "Custom Health API" + the name of your mod (e.g. "Custom Health API (My Cool Isaac Mod)"

@@ -75,6 +75,8 @@ function CustomHealthAPI.Helper.CheckIfHeartShouldUseCustomLogic(player, pickup)
 		end
 	elseif hearttype == HeartSubType.HEART_BLACK then
 		return CustomHealthAPI.Helper.CheckIfBlackShouldUseCustomLogic(player, 2)
+	elseif hearttype == HeartSubType.HEART_GOLDEN then
+		return CustomHealthAPI.Helper.CheckIfGoldenShouldUseCustomLogic(player)
 	elseif hearttype == HeartSubType.HEART_HALF_SOUL then
 		return CustomHealthAPI.Helper.CheckIfSoulShouldUseCustomLogic(player, 1)
 	elseif hearttype == HeartSubType.HEART_SCARED then
@@ -93,7 +95,9 @@ function CustomHealthAPI.Helper.CheckIfHeartShouldUseCustomLogic(player, pickup)
 end
 
 function CustomHealthAPI.Helper.CheckIfRedShouldUseCustomLogic(player, hp)
-	if player:GetPlayerType() == PlayerType.PLAYER_THESOUL then
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRedHearts(player) ~= CustomHealthAPI.Helper.CanPickKey(player, "RED_HEART") then
+		return true
+	elseif player:GetPlayerType() == PlayerType.PLAYER_THESOUL then
 		if player:GetSubPlayer() ~= nil then
 			return CustomHealthAPI.Helper.CheckIfRedShouldUseCustomLogic(player:GetSubPlayer(), hp)
 		end
@@ -145,7 +149,9 @@ function CustomHealthAPI.Helper.CheckIfRedShouldUseCustomLogic(player, hp)
 end
 
 function CustomHealthAPI.Helper.CheckIfRottenShouldUseCustomLogic(player, hp)
-	if player:GetPlayerType() == PlayerType.PLAYER_THESOUL then
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRottenHearts(player) ~= CustomHealthAPI.Helper.CanPickKey(player, "ROTTEN_HEART") then
+		return true
+	elseif player:GetPlayerType() == PlayerType.PLAYER_THESOUL then
 		if player:GetSubPlayer() ~= nil then
 			return CustomHealthAPI.Helper.CheckIfRottenShouldUseCustomLogic(player:GetSubPlayer(), hp)
 		end
@@ -161,14 +167,13 @@ function CustomHealthAPI.Helper.CheckIfRottenShouldUseCustomLogic(player, hp)
 		return false
 	end
 	
-	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickRottenHearts(player) ~= CustomHealthAPI.Helper.CanPickKey(player, "ROTTEN_HEART") then
-		return true
-	end
 	return false
 end
 
 function CustomHealthAPI.Helper.CheckIfSoulShouldUseCustomLogic(player, hp)
-	if player:GetPlayerType() == PlayerType.PLAYER_THEFORGOTTEN then
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickSoulHearts(player) ~= CustomHealthAPI.Helper.CanPickKey(player, "SOUL_HEART") then
+		return true
+	elseif player:GetPlayerType() == PlayerType.PLAYER_THEFORGOTTEN then
 		if player:GetSubPlayer() ~= nil then
 			return CustomHealthAPI.Helper.CheckIfSoulShouldUseCustomLogic(player:GetSubPlayer(), hp)
 		end
@@ -242,7 +247,9 @@ function CustomHealthAPI.Helper.CheckIfSoulShouldUseCustomLogic(player, hp)
 end
 
 function CustomHealthAPI.Helper.CheckIfBlackShouldUseCustomLogic(player, hp)
-	if player:GetPlayerType() == PlayerType.PLAYER_THEFORGOTTEN then
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBlackHearts(player) ~= CustomHealthAPI.Helper.CanPickKey(player, "BLACK_HEART") then
+		return true
+	elseif player:GetPlayerType() == PlayerType.PLAYER_THEFORGOTTEN then
 		if player:GetSubPlayer() ~= nil then
 			return CustomHealthAPI.Helper.CheckIfBlackShouldUseCustomLogic(player:GetSubPlayer(), hp)
 		end
@@ -277,14 +284,13 @@ function CustomHealthAPI.Helper.CheckIfBlackShouldUseCustomLogic(player, hp)
 		hp = hp - 2
 	end
 	
-	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBlackHearts(player) ~= CustomHealthAPI.Helper.CanPickKey(player, "BLACK_HEART") then
-		return true
-	end
 	return false
 end
 
 function CustomHealthAPI.Helper.CheckIfEternalShouldUseCustomLogic(player, hp)
-	if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
+	if not CustomHealthAPI.Helper.CanPickKey(player, "ETERNAL_HEART") then
+		return true
+	elseif player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
 		if player:GetOtherTwin() ~= nil then
 			return CustomHealthAPI.Helper.CheckIfEternalShouldUseCustomLogic(player:GetOtherTwin(), hp)
 		end
@@ -302,7 +308,9 @@ function CustomHealthAPI.Helper.CheckIfEternalShouldUseCustomLogic(player, hp)
 end
 
 function CustomHealthAPI.Helper.CheckIfBoneShouldUseCustomLogic(player, hp)
-	if player:GetPlayerType() == PlayerType.PLAYER_THEFORGOTTEN then
+	if CustomHealthAPI.PersistentData.OverriddenFunctions.CanPickBoneHearts(player) ~= CustomHealthAPI.Helper.CanPickKey(player, "BONE_HEART") then
+		return true
+	elseif player:GetPlayerType() == PlayerType.PLAYER_THEFORGOTTEN then
 		if player:GetSubPlayer() ~= nil then
 			return CustomHealthAPI.Helper.CheckIfBoneShouldUseCustomLogic(player:GetSubPlayer(), hp)
 		end
@@ -342,6 +350,10 @@ function CustomHealthAPI.Helper.CheckIfBoneShouldUseCustomLogic(player, hp)
 	end
 	
 	return true
+end
+
+function CustomHealthAPI.Helper.CheckIfGoldenShouldUseCustomLogic(player)
+	return not CustomHealthAPI.Helper.CanPickKey(player, "GOLDEN_HEART")
 end
 
 function CustomHealthAPI.Library.GetRedHPToBeSpent(p, hpToAdd)
@@ -692,7 +704,7 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 			elseif hearttype == HeartSubType.HEART_SOUL and CustomHealthAPI.Helper.CanPickKey(player, "SOUL_HEART") then
 				CustomHealthAPI.Library.AddHealth(player, "SOUL_HEART", 2, true)
 				SFXManager():Play(SoundEffect.SOUND_HOLY, 1, 0, false, 1.0)
-			elseif hearttype == HeartSubType.HEART_ETERNAL then
+			elseif hearttype == HeartSubType.HEART_ETERNAL and CustomHealthAPI.Helper.CanPickKey(player, "ETERNAL_HEART") then
 				CustomHealthAPI.Library.AddHealth(player, "ETERNAL_HEART", 1, true)
 				SFXManager():Play(SoundEffect.SOUND_SUPERHOLY, 1, 0, false, 1.0)
 			elseif hearttype == HeartSubType.HEART_DOUBLEPACK and CustomHealthAPI.Helper.CanPickKey(player, "RED_HEART") then

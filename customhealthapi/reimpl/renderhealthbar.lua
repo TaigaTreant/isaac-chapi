@@ -67,15 +67,23 @@ function CustomHealthAPI.Mod:RenderCustomHealthOfStrawmanCallback(player, render
 		end
 		
 		if Game():GetLevel():GetCurses() & LevelCurse.CURSE_OF_THE_UNKNOWN == 0 then
+			CustomHealthAPI.PersistentData.PreventResyncing = true
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HP_BAR)
 			for _, callback in ipairs(callbacks) do
 				callback.Function(player, -2, renderOffset)
 			end
+			CustomHealthAPI.PersistentData.PreventResyncing = false
 		end
 	end
 end
 
 function CustomHealthAPI.Helper.GetCurrentRedHealthForRendering(player)
+	local data = player:GetData().CustomHealthAPISavedata
+	data.Cached = data.Cached or {}
+	if data.Cached.RedHealthInRender then
+		return data.Cached.RedHealthInRender
+	end
+	
 	local order = CustomHealthAPI.Helper.GetRedHealthOrder()
 	
 	local currentRedHealth = {}
@@ -86,10 +94,17 @@ function CustomHealthAPI.Helper.GetCurrentRedHealthForRendering(player)
 		end
 	end
 	
+	data.Cached.RedHealthInRender = currentRedHealth
 	return currentRedHealth
 end
 
 function CustomHealthAPI.Helper.GetCurrentOtherHealthForRendering(player)
+	local data = player:GetData().CustomHealthAPISavedata
+	data.Cached = data.Cached or {}
+	if data.Cached.OtherHealthInRender then
+		return data.Cached.OtherHealthInRender
+	end
+	
 	local order = CustomHealthAPI.Helper.GetOtherHealthOrder()
 	
 	local currentOtherHealth = {}
@@ -100,11 +115,17 @@ function CustomHealthAPI.Helper.GetCurrentOtherHealthForRendering(player)
 		end
 	end
 	
+	data.Cached.OtherHealthInRender = currentOtherHealth
 	return currentOtherHealth
 end
 
 function CustomHealthAPI.Helper.GetEternalRenderIndex(player)
 	local data = player:GetData().CustomHealthAPISavedata
+	data.Cached = data.Cached or {}
+	if data.Cached.EternalIndex then
+		return data.Cached.EternalIndex
+	end
+	
 	local redMasks = data.RedHealthMasks
 	local otherMasks = data.OtherHealthMasks
 	
@@ -149,11 +170,18 @@ function CustomHealthAPI.Helper.GetEternalRenderIndex(player)
 		end
 	end
 	
-	return math.max(lastRedIndex, lastInitialEmptyIndex)
+	local eternalIndex = math.max(lastRedIndex, lastInitialEmptyIndex)
+	data.Cached.EternalIndex = eternalIndex
+	return eternalIndex
 end
 
 function CustomHealthAPI.Helper.GetGoldenRenderMask(player)
 	local data = player:GetData().CustomHealthAPISavedata
+	data.Cached = data.Cached or {}
+	if data.Cached.GoldenRenderMask then
+		return data.Cached.GoldenRenderMask
+	end
+	
 	local redMasks = data.RedHealthMasks
 	local otherMasks = data.OtherHealthMasks
 	
@@ -216,6 +244,7 @@ function CustomHealthAPI.Helper.GetGoldenRenderMask(player)
 		end
 	end
 	
+	data.Cached.GoldenRenderMask = goldMask
 	return goldMask
 end
 
@@ -439,9 +468,12 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 			
 			local prevent = false
 			local healthIndex = otherHealthIndex - 1 + ((isSubPlayer and 6) or 0)
+			local extraOffset = Vector(0,0)
+			
+			CustomHealthAPI.PersistentData.PreventResyncing = true
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HEART)
 			for _, callback in ipairs(callbacks) do
-				local returnTable = callback.Function(player, healthIndex, health, redHealth, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				local returnTable = callback.Function(player, healthIndex, health, redHealth, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0), extraOffset)
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true
@@ -458,16 +490,27 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 					if returnTable.Color ~= nil then
 						color = returnTable.Color
 					end
+					if returnTable.Offset ~= nil then
+						extraOffset = returnTable.Offset
+					end
 					break
 				end
 			end
+			CustomHealthAPI.PersistentData.PreventResyncing = false
 			
 			local healthSprite = CustomHealthAPI.Helper.GetHealthSprite(filename)
 			healthSprite:Play(animname, true)
 			healthSprite.Color = color
 			
 			if not prevent then
-				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, #currentOtherHealth)
+				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, #currentOtherHealth, extraOffset)
+				
+				CustomHealthAPI.PersistentData.PreventResyncing = true
+				local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HEART)
+				for _, callback in ipairs(callbacks) do
+					callback.Function(player, playerSlot, healthIndex, health, redHealth, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				end
+				CustomHealthAPI.PersistentData.PreventResyncing = false
 			end
 		end
 		
@@ -480,9 +523,12 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 			
 			local prevent = false
 			local healthIndex = otherHealthIndex - 1 + ((isSubPlayer and 6) or 0)
+			local extraOffset = Vector(0,0)
+			
+			CustomHealthAPI.PersistentData.PreventResyncing = true
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HEART)
 			for _, callback in ipairs(callbacks) do
-				local returnTable = callback.Function(player, healthIndex, {Key = "ETERNAL_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				local returnTable = callback.Function(player, healthIndex, {Key = "ETERNAL_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0), extraOffset)
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true
@@ -499,16 +545,27 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 					if returnTable.Color ~= nil then
 						color = returnTable.Color
 					end
+					if returnTable.Offset ~= nil then
+						extraOffset = returnTable.Offset
+					end
 					break
 				end
 			end
+			CustomHealthAPI.PersistentData.PreventResyncing = false
 			
 			local healthSprite = CustomHealthAPI.Helper.GetHealthSprite(filename)
 			healthSprite:Play(animname, true)
 			healthSprite.Color = color
 			
 			if not prevent then
-				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, #currentOtherHealth)
+				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, #currentOtherHealth, extraOffset)
+				
+				CustomHealthAPI.PersistentData.PreventResyncing = true
+				local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HEART)
+				for _, callback in ipairs(callbacks) do
+					callback.Function(player, playerSlot, healthIndex, {Key = "ETERNAL_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				end
+				CustomHealthAPI.PersistentData.PreventResyncing = false
 			end
 		end
 		
@@ -528,9 +585,12 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 			
 			local prevent = false
 			local healthIndex = i - 1 + ((isSubPlayer and 6) or 0)
+			local extraOffset = Vector(0,0)
+			
+			CustomHealthAPI.PersistentData.PreventResyncing = true
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HEART)
 			for _, callback in ipairs(callbacks) do
-				local returnTable = callback.Function(player, healthIndex, {Key = "GOLDEN_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				local returnTable = callback.Function(player, healthIndex, {Key = "GOLDEN_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0), extraOffset)
 				if returnTable ~= nil then
 					if returnTable.Prevent == true then
 						prevent = true
@@ -547,16 +607,27 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 					if returnTable.Color ~= nil then
 						color = returnTable.Color
 					end
+					if returnTable.Offset ~= nil then
+						extraOffset = returnTable.Offset
+					end
 					break
 				end
 			end
+			CustomHealthAPI.PersistentData.PreventResyncing = false
 			
 			local healthSprite = CustomHealthAPI.Helper.GetHealthSprite(filename)
 			healthSprite:Play(animname, true)
 			healthSprite.Color = color
 			
 			if not prevent then
-				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, #currentOtherHealth)
+				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, #currentOtherHealth, extraOffset)
+				
+				CustomHealthAPI.PersistentData.PreventResyncing = true
+				local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HEART)
+				for _, callback in ipairs(callbacks) do
+					callback.Function(player, playerSlot, healthIndex, {Key = "GOLDEN_HEART", HP = 1}, nil, filename, animname, Color.Lerp(color, Color(1,1,1,1,0,0,0), 0))
+				end
+				CustomHealthAPI.PersistentData.PreventResyncing = false
 			end
 		end
 	end
@@ -655,10 +726,14 @@ function CustomHealthAPI.Helper.RenderKeeperHealth(player, playerSlot, renderOff
 		if hasRedHealth then
 			redHealthIndex = redHealthIndex + 1
 		end
+		
+		if otherHealthIndex > 24 then
+			break
+		end
 	end
 	
 	local goldenToRender = numGolden
-	for i = math.ceil(numRed / 2), 1, -1 do
+	for i = math.min(24, math.ceil(numRed / 2)), 1, -1 do
 		if goldenToRender > 0 then
 			local goldenDefinition = CustomHealthAPI.PersistentData.HealthDefinitions["GOLDEN_HEART"]
 			local healthSprite = CustomHealthAPI.Helper.GetHealthSprite(goldenDefinition.AnimationFilename)
@@ -677,6 +752,7 @@ function CustomHealthAPI.Helper.RenderCurseOfTheUnknown(player, playerSlot, rend
 	local color = Color(1.0, 1.0, 1.0, 1.0, 0/255, 0/255, 0/255)
 	
 	local prevent = nil
+	CustomHealthAPI.PersistentData.PreventResyncing = true
 	local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_UNKNOWN_CURSE)
 	for _, callback in ipairs(callbacks) do
 		local returnTable = callback.Function(player)
@@ -699,6 +775,7 @@ function CustomHealthAPI.Helper.RenderCurseOfTheUnknown(player, playerSlot, rend
 			break
 		end
 	end
+	CustomHealthAPI.PersistentData.PreventResyncing = false
 	
 	local healthSprite = CustomHealthAPI.Helper.GetHealthSprite(filename)
 	healthSprite:Play(animname, true)
@@ -706,6 +783,13 @@ function CustomHealthAPI.Helper.RenderCurseOfTheUnknown(player, playerSlot, rend
 	
 	if not prevent then
 		CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, 0, renderOffset, 1, nil, true)
+		
+		CustomHealthAPI.PersistentData.PreventResyncing = true
+		local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_UNKNOWN_CURSE)
+		for _, callback in ipairs(callbacks) do
+			callback.Function(player, playerSlot)
+		end
+		CustomHealthAPI.PersistentData.PreventResyncing = false
 	end
 end
 
@@ -716,16 +800,18 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 		local color = Color(1.0, 1.0, 1.0, 1.0, 0/255, 0/255, 0/255)
 		
 		local playerType = player:GetPlayerType()
-		local numKeys
+		local numKeys, keyLimit
 		if playerType == PlayerType.PLAYER_KEEPER or playerType == PlayerType.PLAYER_KEEPER_B then
-			numKeys = math.ceil(CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts(player) / 2) +
-					  CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts(player)
+			numKeys = math.min(24, math.ceil(CustomHealthAPI.PersistentData.OverriddenFunctions.GetMaxHearts(player) / 2) +
+					               CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts(player))
+			keyLimit = math.min(24, math.ceil(CustomHealthAPI.Helper.GetTrueHeartLimit(player) / 2))
 		elseif CustomHealthAPI.Helper.PlayerIsIgnored(player) or player:IsCoopGhost() or CustomHealthAPI.Helper.IsFoundSoul(player) then
 			numKeys = 0
+			keyLimit = math.ceil(CustomHealthAPI.Helper.GetTrueHeartLimit(player) / 2)
 		else
 			numKeys = #CustomHealthAPI.Helper.GetCurrentOtherHealthForRendering(player)
+			keyLimit = math.ceil(CustomHealthAPI.Helper.GetTrueHeartLimit(player) / 2)
 		end
-		local keyLimit = math.ceil(CustomHealthAPI.Helper.GetTrueHeartLimit(player) / 2)
 		
 		if numKeys >= keyLimit and numKeys % 6 == 0 and 
 		   not (player:GetEffects():HasNullEffect(NullItemID.ID_LOST_CURSE) or player:GetPlayerType() == PlayerType.PLAYER_JACOB2_B) 
@@ -734,6 +820,7 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 			local healthIndex = numKeys - 1
 			local additionalOffset = Vector(CustomHealthAPI.Constants.HEART_PIXEL_WIDTH_DEFAULT / 2, 0)
 			
+			CustomHealthAPI.PersistentData.PreventResyncing = true
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HOLY_MANTLE)
 			for _, callback in ipairs(callbacks) do
 				local returnTable = callback.Function(player, healthIndex)
@@ -759,6 +846,7 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 					break
 				end
 			end
+			CustomHealthAPI.PersistentData.PreventResyncing = false
 			
 			local healthSprite = CustomHealthAPI.Helper.GetHealthSprite(filename)
 			healthSprite:Play(animname, true)
@@ -766,6 +854,13 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 			
 			if not prevent then
 				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, numKeys, additionalOffset)
+				
+				CustomHealthAPI.PersistentData.PreventResyncing = true
+				local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HOLY_MANTLE)
+				for _, callback in ipairs(callbacks) do
+					callback.Function(player, playerSlot, healthIndex)
+				end
+				CustomHealthAPI.PersistentData.PreventResyncing = false
 			end
 		else
 			local prevent = false
@@ -775,6 +870,7 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 			end
 			local additionalOffset = Vector.Zero
 			
+			CustomHealthAPI.PersistentData.PreventResyncing = true
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.PRE_RENDER_HOLY_MANTLE)
 			for _, callback in ipairs(callbacks) do
 				local returnTable = callback.Function(player, healthIndex)
@@ -800,6 +896,7 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 					break
 				end
 			end
+			CustomHealthAPI.PersistentData.PreventResyncing = false
 			
 			local healthSprite = CustomHealthAPI.Helper.GetHealthSprite(filename)
 			healthSprite:Play(animname, true)
@@ -807,6 +904,13 @@ function CustomHealthAPI.Helper.RenderHolyMantle(player, playerSlot, renderOffse
 			
 			if not prevent then
 				CustomHealthAPI.Helper.RenderHealth(healthSprite, player, playerSlot, healthIndex, renderOffset, numKeys, additionalOffset)
+				
+				CustomHealthAPI.PersistentData.PreventResyncing = true
+				local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HOLY_MANTLE)
+				for _, callback in ipairs(callbacks) do
+					callback.Function(player, playerSlot, healthIndex)
+				end
+				CustomHealthAPI.PersistentData.PreventResyncing = false
 			end
 		end
 	end
@@ -864,10 +968,12 @@ function CustomHealthAPI.Helper.RenderCustomHealth()
 			end
 			
 			if Game():GetLevel():GetCurses() & LevelCurse.CURSE_OF_THE_UNKNOWN == 0 then
+				CustomHealthAPI.PersistentData.PreventResyncing = true
 				local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HP_BAR)
 				for _, callback in ipairs(callbacks) do
 					callback.Function(player, playerSlot, Vector.Zero)
 				end
+				CustomHealthAPI.PersistentData.PreventResyncing = false
 			end
 
 			if renderedPlayerOne == nil then
@@ -910,10 +1016,12 @@ function CustomHealthAPI.Helper.RenderCustomHealth()
 		end
 			
 		if Game():GetLevel():GetCurses() & LevelCurse.CURSE_OF_THE_UNKNOWN == 0 then
+			CustomHealthAPI.PersistentData.PreventResyncing = true
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_RENDER_HP_BAR)
 			for _, callback in ipairs(callbacks) do
 				callback.Function(esauToRender, -1, Vector.Zero)
 			end
+			CustomHealthAPI.PersistentData.PreventResyncing = false
 		end
 	end
 end
