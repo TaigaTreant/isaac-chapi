@@ -9,6 +9,4 @@ To add to your project, complete the following steps:
 
        include("[INSERT_CHAPI_SCRIPTS_DIRECTORY_HERE].customhealthapi.core")
 
-5) Add callbacks for CustomHealthAPI.Enums.Callbacks.ON_SAVE and CustomHealthAPI.Enums.Callbacks.ON_LOAD to your mod to handle Custom Health API save data (see wiki for details).
-
-Any further information about Custom Health API and it's features are located in the Github project's wiki (currently unfinished).
+5) Add callbacks for CustomHealthAPI.Enums.Callbacks.ON_SAVE and CustomHealthAPI.Enums.Callbacks.ON_LOAD to your mod to handle Custom Health API save data.
