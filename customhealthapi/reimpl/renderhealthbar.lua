@@ -267,21 +267,45 @@ function CustomHealthAPI.Helper.RenderHealth(sprite, player, playerSlot, i, rend
 	local offset = offset or Vector.Zero
 	sprite.FlipX = false
 	if playerSlot == 0 then -- Player 1
-		sprite:Render(Vector(48 + hudOffset * 2 + heartDistanceX * (i % 6), 
-		                     12 + math.floor(hudOffset * 2.4 + 0.5) / 2 + heartDistanceY * math.floor(i / 6)) + offset, 
-		              Vector.Zero, Vector.Zero)
+		if REPENTANCE_PLUS then
+			sprite:Render(Vector(48 + hudOffset * 2 + heartDistanceX * (i % 6), 
+						18 + math.floor(hudOffset * 2.4 + 0.5) / 2 + heartDistanceY * math.floor(i / 6)) + offset, 
+					Vector.Zero, Vector.Zero)
+		else
+			sprite:Render(Vector(48 + hudOffset * 2 + heartDistanceX * (i % 6), 
+						12 + math.floor(hudOffset * 2.4 + 0.5) / 2 + heartDistanceY * math.floor(i / 6)) + offset, 
+	 				Vector.Zero, Vector.Zero)
+		end
 	elseif playerSlot == 1 then -- Player 2
-		sprite:Render(Vector(bottomRight.X - 111 - math.floor(hudOffset * 2.4 + 0.5) + heartDistanceX * (i % 3), 
-		                     12 + math.floor(hudOffset * 2.4 + 0.5) / 2 + heartDistanceY * math.floor(i / 3)) + offset, 
-		              Vector.Zero, Vector.Zero)
+		if REPENTANCE_PLUS then
+			sprite:Render(Vector(bottomRight.X - 127 - math.floor(hudOffset * 2.4 + 0.5) + heartDistanceX * (i % 6), 
+							18 + math.floor(hudOffset * 2.4 + 0.5) / 2 + heartDistanceY * math.floor(i / 6)) + offset, 
+						Vector.Zero, Vector.Zero)
+		else
+			sprite:Render(Vector(bottomRight.X - 111 - math.floor(hudOffset * 2.4 + 0.5) + heartDistanceX * (i % 3), 
+							12 + math.floor(hudOffset * 2.4 + 0.5) / 2 + heartDistanceY * math.floor(i / 3)) + offset, 
+						Vector.Zero, Vector.Zero)
+		end
 	elseif playerSlot == 2 then -- Player 3
-		sprite:Render(Vector(58 + math.floor(hudOffset * 2.2 + 0.5) + heartDistanceX * (i % 3), 
-		                     bottomRight.Y - 27 - math.floor(hudOffset * 1.2 + 0.5) / 2 + heartDistanceY * math.floor(i / 3)) + offset, 
-		              Vector.Zero, Vector.Zero)
+		if REPENTANCE_PLUS then
+			sprite:Render(Vector(58 + math.floor(hudOffset * 2.2 + 0.5) + heartDistanceX * (i % 6), 
+							bottomRight.Y - 27 - math.floor(hudOffset * 1.2 + 0.5) / 2 + heartDistanceY * math.floor(i / 6)) + offset, 
+						Vector.Zero, Vector.Zero)
+		else
+			sprite:Render(Vector(58 + math.floor(hudOffset * 2.2 + 0.5) + heartDistanceX * (i % 3), 
+							bottomRight.Y - 27 - math.floor(hudOffset * 1.2 + 0.5) / 2 + heartDistanceY * math.floor(i / 3)) + offset,
+						Vector.Zero, Vector.Zero)
+		end
 	elseif playerSlot == 3 then -- Player 4
-		sprite:Render(Vector(bottomRight.X - 119 - math.floor(hudOffset * 1.6 + 0.5) + heartDistanceX * (i % 3), 
-		                     bottomRight.Y - 27 - math.floor(hudOffset * 1.2 + 0.5) / 2 + heartDistanceY * math.floor(i / 3)) + offset, 
-		              Vector.Zero, Vector.Zero)
+		if REPENTANCE_PLUS then
+			sprite:Render(Vector(bottomRight.X - 135 - math.floor(hudOffset * 1.6 + 0.5) + heartDistanceX * (i % 6), 
+							bottomRight.Y - 27 - math.floor(hudOffset * 1.2 + 0.5) / 2 + heartDistanceY * math.floor(i / 6)) + offset, 
+						Vector.Zero, Vector.Zero)
+		else
+			sprite:Render(Vector(bottomRight.X - 119 - math.floor(hudOffset * 1.6 + 0.5) + heartDistanceX * (i % 3), 
+							bottomRight.Y - 27 - math.floor(hudOffset * 1.2 + 0.5) / 2 + heartDistanceY * math.floor(i / 3)) + offset,
+						Vector.Zero, Vector.Zero)
+		end
 	elseif playerSlot == -1 then -- Esau
 		if not ignoreEsauFlipX then
 			sprite.FlipX = true
