@@ -1,3 +1,20 @@
+if REPENTOGON then
+function CustomHealthAPI.Helper.AddInitializeHealthCallback()
+	Isaac.AddCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PLAYER_INIT_POST_LEVEL_INIT_STATS, CustomHealthAPI.Mod.InitializeHealthCallback, -1)
+end
+table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddInitializeHealthCallback)
+
+function CustomHealthAPI.Helper.RemoveInitializeHealthCallback()
+	CustomHealthAPI.Mod:RemoveCallback(ModCallbacks.MC_PLAYER_INIT_POST_LEVEL_INIT_STATS, CustomHealthAPI.Mod.InitializeHealthCallback)
+end
+table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemoveInitializeHealthCallback)
+
+function CustomHealthAPI.Mod:InitializeHealthCallback(player)
+	CustomHealthAPI.Helper.CheckIfHealthOrderSet()
+	CustomHealthAPI.Helper.CheckHealthIsInitializedForPlayer(player)
+end
+end
+
 function CustomHealthAPI.Helper.InitializeRedHealthMasks(player)
 	local total = CustomHealthAPI.PersistentData.OverriddenFunctions.GetHearts(player)
 	local rotten = CustomHealthAPI.PersistentData.OverriddenFunctions.GetRottenHearts(player)
@@ -12,7 +29,7 @@ function CustomHealthAPI.Helper.InitializeRedHealthMasks(player)
 	local order = CustomHealthAPI.Helper.GetRedHealthOrder()
 	data.RedHealthMasks = {}
 	
-	local isKeeper = CustomHealthAPI.Helper.PlayerIsKeeper(player)
+	local isKeeper = CustomHealthAPI.Helper.PlayerHasCoinHealth(player)
 	for i = 1, #order do
 		local sort = order[i]
 		data.RedHealthMasks[i] = {}
@@ -74,7 +91,7 @@ function CustomHealthAPI.Helper.InitializeOtherHealthMasks(player)
 	local order = CustomHealthAPI.Helper.GetOtherHealthOrder()
 	data.OtherHealthMasks = {}
 	
-	local isKeeper = CustomHealthAPI.Helper.PlayerIsKeeper(player)
+	local isKeeper = CustomHealthAPI.Helper.PlayerHasCoinHealth(player)
 	for i = 1, #order do
 		local sort = order[i]
 		data.OtherHealthMasks[i] = {}
@@ -201,7 +218,34 @@ function CustomHealthAPI.Helper.CheckIfPlayerRespawned(player)
 	return revived
 end
 
+function CustomHealthAPI.Helper.AddResetRecursiveInitPreventionCallback()
+	Isaac.AddCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_UPDATE, CustomHealthAPI.Mod.ResetRecursiveInitPreventionCallback, -1)
+end
+table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddResetRecursiveInitPreventionCallback)
+
+function CustomHealthAPI.Helper.RemoveResetRecursiveInitPreventionCallback()
+	CustomHealthAPI.Mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, CustomHealthAPI.Mod.ResetRecursiveInitPreventionCallback)
+end
+table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemoveResetRecursiveInitPreventionCallback)
+
+local avoidRecursive = false
+function CustomHealthAPI.Mod:ResetRecursiveInitPreventionCallback()
+	if avoidRecursive then
+		print("Custom Health API ERROR: Initiatize recursive prevention failed.")
+		avoidRecursive = false
+	end
+end
+
 function CustomHealthAPI.Helper.CheckHealthIsInitializedForPlayer(player, isSubPlayer)
+	-- Call this early to trigger repentogon's GetHealthType callback in case it changed.
+	local ignored = CustomHealthAPI.Helper.PlayerIsIgnored(player)
+
+	if avoidRecursive then
+		return
+	end
+	avoidRecursive = true
+	CustomHealthAPI.PersistentData.PreventResyncing = CustomHealthAPI.PersistentData.PreventResyncing + 1
+
 	local revived = false
 	if not isSubPlayer then
 		revived = CustomHealthAPI.Helper.CheckIfPlayerRespawned(player)
@@ -211,8 +255,10 @@ function CustomHealthAPI.Helper.CheckHealthIsInitializedForPlayer(player, isSubP
 	
 	local callCache = false
 	local callSubCache = false
-	if CustomHealthAPI.Helper.PlayerIsIgnored(player) then
+	if ignored then
 		player:GetData().CustomHealthAPISavedata = nil
+		avoidRecursive = false
+		CustomHealthAPI.PersistentData.PreventResyncing = CustomHealthAPI.PersistentData.PreventResyncing - 1
 		
 		if revived then
 			local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.POST_PLAYER_REVIVED)
@@ -291,6 +337,9 @@ function CustomHealthAPI.Helper.CheckHealthIsInitializedForPlayer(player, isSubP
 		
 		callCallbacks = true
 	end
+	
+	avoidRecursive = false
+	CustomHealthAPI.PersistentData.PreventResyncing = CustomHealthAPI.PersistentData.PreventResyncing - 1
 	
 	if player:GetSubPlayer() ~= nil and not isSubPlayer then
 		CustomHealthAPI.Helper.CheckHealthIsInitializedForPlayer(player:GetSubPlayer(), true)

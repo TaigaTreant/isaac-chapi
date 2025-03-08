@@ -69,7 +69,7 @@ function CustomHealthAPI.Helper.TryConvertingSoulHP(player, key, overflowedHP, i
 	return overflowedHP - overflowAdding
 end
 
-function CustomHealthAPI.Helper.TryInsertingSoulHP(player, key, hpAddedByKey, overflowedHP, ignoreRoomForOtherKeys)
+function CustomHealthAPI.Helper.TryInsertingSoulHP(player, key, hpAddedByKey, overflowedHP, ignoreRoomForOtherKeys, convertedMaxInsertFront)
 	local maxHP = CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP")
 	if (CustomHealthAPI.Helper.GetRoomForOtherKeys(player) > 0 or ignoreRoomForOtherKeys) and 
 	   (maxHP > 1 or hpAddedByKey + overflowedHP >= 2) 
@@ -81,12 +81,19 @@ function CustomHealthAPI.Helper.TryInsertingSoulHP(player, key, hpAddedByKey, ov
 		
 		local maxHP = CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP")
 		local overflowAdding
+		local hp
 		if maxHP <= 1 then
 			overflowAdding = math.min(overflowedHP, 2 - hpAddedByKey)
-			table.insert(keyContainingMask, {Key = key, HP = 1})
+			hp = 1
 		else
 			overflowAdding = math.min(overflowedHP, maxHP - hpAddedByKey)
-			table.insert(keyContainingMask, {Key = key, HP = hpAddedByKey + overflowAdding})
+			hp = hpAddedByKey + overflowAdding
+		end
+		
+		if convertedMaxInsertFront then
+			table.insert(keyContainingMask, 1, {Key = key, HP = hp})
+		else
+			table.insert(keyContainingMask, {Key = key, HP = hp})
 		end
 		
 		return overflowedHP - overflowAdding
@@ -207,7 +214,7 @@ function CustomHealthAPI.Helper.HealSoulAnywhere(player, hp)
 	return remainingHPToHeal
 end
 
-function CustomHealthAPI.Helper.PlusSoulMain(player, key, hp, ignoreRoomForOtherKeys)
+function CustomHealthAPI.Helper.PlusSoulMain(player, key, hp, ignoreRoomForOtherKeys, convertedMaxInsertFront)
 	local maxHP = CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP")
 	local hpToAdd = hp
 	
@@ -225,7 +232,11 @@ function CustomHealthAPI.Helper.PlusSoulMain(player, key, hp, ignoreRoomForOther
 			hpAddedByKey = math.min(hpToAdd, 2)
 		end
 		
-		overflowedHP = CustomHealthAPI.Helper.TryHealingSoulHP(player, key, hpAddedByKey, overflowedHP, ignoreRoomForOtherKeys)
+		if convertedMaxInsertFront and hpAddedByKey == maxHP then
+			overflowedHP = overflowedHP + CustomHealthAPI.Helper.TryInsertingSoulHP(player, key, hpAddedByKey, 0, ignoreRoomForOtherKeys, convertedMaxInsertFront)
+		else
+			overflowedHP = CustomHealthAPI.Helper.TryHealingSoulHP(player, key, hpAddedByKey, overflowedHP, ignoreRoomForOtherKeys)
+		end
 		overflowedHP = CustomHealthAPI.Helper.HealSoulAnywhere(player, overflowedHP)
 		
 		hpToAdd = hpToAdd - hpAddedByKey
@@ -234,6 +245,12 @@ function CustomHealthAPI.Helper.PlusSoulMain(player, key, hp, ignoreRoomForOther
 	overflowedHP = overflowedHP + hpToAdd
 	
 	overflowedHP = CustomHealthAPI.Helper.HealSoulAnywhere(player, overflowedHP)
+	
+	while CustomHealthAPI.Helper.GetAmountUnoccupiedContainers(player) < 0 do
+		if not CustomHealthAPI.Helper.RemoveLowestPriorityRedKey(player, true) then
+			break
+		end
+	end
 	
 	return math.max(0, overflowedHP)
 end
@@ -365,7 +382,7 @@ function CustomHealthAPI.Helper.MinusSoulMain(player, key, hp)
 	
 	local hpToRemove = hp
 	while hpToRemove > 0 do
-		if CustomHealthAPI.Helper.GetTotalSoulHP(player) <= 0 then
+		if CustomHealthAPI.Helper.GetTotalSoulHP(player, nil, nil, true) <= 0 then
 			return math.max(0, hpToRemove) * -1
 		end
 	
@@ -380,12 +397,18 @@ function CustomHealthAPI.Helper.MinusSoulMain(player, key, hp)
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "SOUL_HEART", math.abs(hpToRemove), false, false, true)
 	end
 	
+	while CustomHealthAPI.Helper.GetAmountUnoccupiedContainers(player) < 0 do
+		if not CustomHealthAPI.Helper.RemoveLowestPriorityRedKey(player, true) then
+			break
+		end
+	end
+	
 	return math.max(0, hpToRemove) * -1
 end
 
-function CustomHealthAPI.Helper.AddSoulMain(player, key, hp)
+function CustomHealthAPI.Helper.AddSoulMain(player, key, hp, convertedMaxInsertFront)
 	if hp > 0 then
-		return CustomHealthAPI.Helper.PlusSoulMain(player, key, hp)
+		return CustomHealthAPI.Helper.PlusSoulMain(player, key, hp, false, convertedMaxInsertFront)
 	elseif hp < 0 then
 		return CustomHealthAPI.Helper.MinusSoulMain(player, key, math.abs(hp))
 	end

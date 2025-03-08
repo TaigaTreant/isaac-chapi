@@ -1,9 +1,9 @@
 function CustomHealthAPI.Helper.HandleTemporaryHP(player, datakey)
 	local key = "EMPTY_HEART"
 	
-	if CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[player:GetPlayerType()] then
-		key = CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[player:GetPlayerType()]
-	elseif CustomHealthAPI.Helper.PlayerIsTheForgotten(player) then
+	if CustomHealthAPI.Helper.PlayerIsSoulHeartOnly(player) then
+		key = CustomHealthAPI.Helper.GetConvertedMaxHealthType(player)
+	elseif CustomHealthAPI.Helper.PlayerIsBoneHeartOnly(player) then
 		key = "BONE_HEART"
 	else
 		local callbacks = CustomHealthAPI.Helper.GetCallbacks(CustomHealthAPI.Enums.Callbacks.GET_MAX_HP_CONVERSION)
@@ -37,11 +37,11 @@ function CustomHealthAPI.Helper.HandleTemporaryHP(player, datakey)
 		end
 	end
 	
-	local hpBefore = CustomHealthAPI.Helper.GetTotalHPOfKey(player, key)
+	local hpBefore = CustomHealthAPI.Helper.GetTotalHPOfKey(player, key, true)
 	if typ == CustomHealthAPI.Enums.HealthTypes.CONTAINER and
 	   maxHP <= 0 
 	then
-		hpBefore = CustomHealthAPI.Helper.GetTotalKeys(player, key)
+		hpBefore = CustomHealthAPI.Helper.GetTotalKeys(player, key, true)
 		if CustomHealthAPI.Library.GetInfoOfKey(key, "CanHaveHalfCapacity") == true then
 			hpBefore = hpBefore * 2
 		end
@@ -55,11 +55,11 @@ function CustomHealthAPI.Helper.HandleTemporaryHP(player, datakey)
 	end
 	CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 	
-	local hpAfter = CustomHealthAPI.Helper.GetTotalHPOfKey(player, key)
+	local hpAfter = CustomHealthAPI.Helper.GetTotalHPOfKey(player, key, true)
 	if typ == CustomHealthAPI.Enums.HealthTypes.CONTAINER and
 	   maxHP <= 0 
 	then
-		hpAfter = CustomHealthAPI.Helper.GetTotalKeys(player, key)
+		hpAfter = CustomHealthAPI.Helper.GetTotalKeys(player, key, true)
 		if CustomHealthAPI.Library.GetInfoOfKey(key, "CanHaveHalfCapacity") == true then
 			hpAfter = hpAfter * 2
 		end
@@ -170,31 +170,33 @@ function CustomHealthAPI.Helper.RemoveTemporaryHP(player, datakey)
 		local hpRemainingOtherwise
 		if typ == CustomHealthAPI.Enums.HealthTypes.SOUL then
 			hpPer = maxHP
-			hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalSoulHP(player, true)
-			hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalRedHP(player, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true)
+			hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalSoulHP(player, true, nil, true)
+			hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalRedHP(player, true, nil, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true, true)
 		elseif typ == CustomHealthAPI.Enums.HealthTypes.CONTAINER then
 			local canHaveHalfCapacity = CustomHealthAPI.PersistentData.HealthDefinitions[key].CanHaveHalfCapacity
 			
 			if maxHP >= 1 then
 				hpPer = maxHP
-				hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalBoneHP(player, true) * 2
-				hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalSoulHP(player, true) + 
-				                       math.min(CustomHealthAPI.Helper.GetTotalRedHP(player, true), CustomHealthAPI.Helper.GetTotalMaxHP(player))
+				hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalBoneHP(player, true, true) * 2
+				hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalSoulHP(player, true, nil, true) + 
+				                       math.min(CustomHealthAPI.Helper.GetTotalRedHP(player, true, nil, true), CustomHealthAPI.Helper.GetTotalMaxHP(player, true))
 			elseif canHaveHalfCapacity then
 				hpPer = 2
-				hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalMaxHP(player)
-				hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalSoulHP(player, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true)
+				hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalMaxHP(player, true)
+				hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalSoulHP(player, true, nil, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true, true)
 			else
 				hpPer = 1
-				hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalMaxHP(player)
-				hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalSoulHP(player, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true)
+				hpRemainingOfKey = CustomHealthAPI.Helper.GetTotalMaxHP(player, true)
+				hpRemainingOtherwise = CustomHealthAPI.Helper.GetTotalSoulHP(player, true, nil, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true, true)
 			end
 		end
 		
 		if hpRemainingOfKey <= 2 and hpRemainingOtherwise == 0 then
 			--do nothing
 		else
+			CustomHealthAPI.PersistentData.PreventResyncing = CustomHealthAPI.PersistentData.PreventResyncing + 1
 			CustomHealthAPI.Library.AddHealth(player, key, hpPer * -1, false, false, false, true)
+			CustomHealthAPI.PersistentData.PreventResyncing = CustomHealthAPI.PersistentData.PreventResyncing - 1
 		end
 	end
 	

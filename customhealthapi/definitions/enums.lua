@@ -48,17 +48,25 @@ CustomHealthAPI.Enums.Callbacks = {
 	POST_UPDATE_HEALTH_STATE = 34,
 	PRE_HEARTBREAK_HEAL = 35,
 	GET_MAX_HP_CAP = 36,
+	PRE_RENDER_LIVES = 37,
+	POST_RENDER_LIVES = 38,
 }
 
 CustomHealthAPI.Enums.PlayerSlot = {
-	STRAWMAN = -2,
-	ESAU = -1,
+	STRAWMAN = -1,
 	PLAYER_ONE = 0,
 	PLAYER_TWO = 1,
 	PLAYER_THREE = 2,
 	PLAYER_FOUR = 3,
+	ESAU = 4,
+	PLAYER_ONE_ESAU = 4,
+	PLAYER_TWO_ESAU = 5,
+	PLAYER_THREE_ESAU = 6,
+	PLAYER_FOUR_ESAU = 7,
 }
 
 CustomHealthAPI.Enums.CallbackPriorities = {
+	FIRST = math.mininteger,
+	EARLY = -920,
 	LATE = 920,
 }

@@ -58,12 +58,14 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 			if player:GetPlayerType() == PlayerType.PLAYER_JACOB2_B or
 			   player:GetEffects():HasNullEffect(NullItemID.ID_LOST_CURSE)
 			then
-				data.CurrentQueuedItem = pickup.SubType
+				if not REPENTOGON then
+					data.CurrentQueuedItem = pickup.SubType
+				end
 				return
 			end
 			
 			local updatingPrice = false
-			local isCharacterThatConvertsMaxHealth = CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[player:GetPlayerType()]
+			local isCharacterThatConvertsMaxHealth = CustomHealthAPI.Helper.PlayerIsSoulHeartOnly(player, true)
 			if pickup.Price == -1 then
 				--1 Red
 				if isCharacterThatConvertsMaxHealth then
@@ -82,7 +84,7 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 				updatingPrice = true
 			elseif pickup.Price == -3 then
 				--3 soul
-				local soulHp = CustomHealthAPI.Helper.GetTotalSoulHP(player)
+				local soulHp = CustomHealthAPI.Helper.GetTotalSoulHP(player, nil, nil, true)
 				local soulToRemove = math.min(6, math.ceil(soulHp / 2) * 2)
 				local maxToRemove = 6 - soulToRemove
 				
@@ -129,15 +131,15 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 			if updatingPrice then
 				pickup.AutoUpdatePrice = false
 				pickup.Price = PickupPrice.PRICE_FREE
-				if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
-					if CustomHealthAPI.Helper.PlayerIsTheForgotten(player) then
+				if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
+					if CustomHealthAPI.Helper.PlayerIsBoneHeartOnly(player) then
 						CustomHealthAPI.Helper.AddBoneHeartsKissesFix(player, 1)
 						CustomHealthAPI.Helper.AddHeartsKissesFix(player, 2)
 						pickup.Price = -1
 					elseif CustomHealthAPI.Helper.PlayerIsTheSoul(player) then
 						CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, 2)
 						pickup.Price = -7
-					elseif CustomHealthAPI.PersistentData.CharactersThatConvertMaxHealth[player:GetPlayerType()] then
+					elseif CustomHealthAPI.Helper.PlayerIsSoulHeartOnly(player, true) then
 						CustomHealthAPI.Helper.AddSoulHeartsKissesFix(player, 2)
 						pickup.Price = -7
 					else
@@ -148,7 +150,9 @@ function CustomHealthAPI.Mod:ItemPedestalCollisionCallback(pickup, collider)
 				end
 			end
 			
-			data.CurrentQueuedItem = pickup.SubType
+			if not REPENTOGON then
+				data.CurrentQueuedItem = pickup.SubType
+			end
 		end
 	end
 end
@@ -183,8 +187,12 @@ function CustomHealthAPI.Helper.HandleCollectibleHP(player, item)
 		CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 		manuallyHandleTransformations = true
 	elseif item == CollectibleType.COLLECTIBLE_HEARTBREAK then
-		CustomHealthAPI.Helper.UpdateHealthMasks(player, "BROKEN_HEART", 3)
-		CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
+		local limit = math.ceil(CustomHealthAPI.PersistentData.OverriddenFunctions.GetHeartLimit(player) / 2) + CustomHealthAPI.PersistentData.OverriddenFunctions.GetBrokenHearts(player)
+		local maxBroken = (limit - CustomHealthAPI.Helper.GetTotalBrokenHP(player, true)) - 1
+		if maxBroken > 0 then
+			CustomHealthAPI.Helper.UpdateHealthMasks(player, "BROKEN_HEART", math.min(3, maxBroken))
+			CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
+		end
 		manuallyHandleTransformations = true
 	elseif item == CollectibleType.COLLECTIBLE_FATE then
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "ETERNAL_HEART", 1)
@@ -244,6 +252,34 @@ function CustomHealthAPI.Helper.HandleCollectibleHP(player, item)
 		end
 	end
 end
+
+if REPENTOGON then
+
+function CustomHealthAPI.Helper.AddPostAddCollectibleCallback()
+---@diagnostic disable-next-line: param-type-mismatch
+	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_ADD_COLLECTIBLE, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.PostAddCollectibleCallback, -1)
+end
+table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddPostAddCollectibleCallback)
+
+function CustomHealthAPI.Helper.RemovePostAddCollectibleCallback()
+	CustomHealthAPI.Mod:RemoveCallback(ModCallbacks.MC_POST_ADD_COLLECTIBLE, CustomHealthAPI.Mod.PostAddCollectibleCallback)
+end
+table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemovePostAddCollectibleCallback)
+
+function CustomHealthAPI.Mod:PostAddCollectibleCallback(item, charge, firstTime, slot, varData, player)
+	if firstTime and not CustomHealthAPI.Helper.PlayerIsIgnored(player) then
+		CustomHealthAPI.Helper.HandleCollectibleHP(player, item)
+	end
+	
+	player:GetData().CustomHealthAPIPersistent = player:GetData().CustomHealthAPIPersistent or {}
+	local pdata = player:GetData().CustomHealthAPIPersistent
+	
+	pdata.HasFunGuyTransformation = player:HasPlayerForm(PlayerForm.PLAYERFORM_MUSHROOM)
+	pdata.HasSeraphimTransformation = player:HasPlayerForm(PlayerForm.PLAYERFORM_ANGEL)
+	pdata.HasLeviathanTransformation = player:HasPlayerForm(PlayerForm.PLAYERFORM_EVIL_ANGEL)
+end
+
+else
 
 function CustomHealthAPI.Helper.HandleCollectiblePickup(player)
 	if not CustomHealthAPI.Helper.PlayerIsIgnored(player) then
@@ -305,4 +341,6 @@ function CustomHealthAPI.Helper.HandleItemRecycle(player)
 			data.CurrentQueuedItem = nil
 		end
 	end
+end
+
 end

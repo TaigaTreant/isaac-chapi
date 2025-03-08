@@ -1,3 +1,18 @@
+if REPENTOGON then
+
+function CustomHealthAPI.Helper.IsPlayerUsingHorsePill(player, pillEffect, useflags, pillColour)
+	if pillColour then
+		local isHorsePill = pillColour & PillColor.PILL_GIANT_FLAG > 0
+		local isGoldHorsePill = (pillColour == PillColor.PILL_GOLD + PillColor.PILL_GIANT_FLAG)
+
+		return isHorsePill or isGoldHorsePill
+	end
+
+	return false
+end
+
+else
+
 -- Thanks Xalum for Horse Pill detection
 -- nvm this broke in rep patch 1.7.9
 --[[function CustomHealthAPI.Helper.IsPlayerUsingHorsePill(player, useflags)
@@ -67,6 +82,8 @@ function CustomHealthAPI.Mod:CurrentlyHeldPillForAllCallback()
 	end
 end
 
+end
+
 function CustomHealthAPI.Helper.AddUsePillCallback()
 ---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_USE_PILL, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.UsePillCallback, -1)
@@ -78,7 +95,7 @@ function CustomHealthAPI.Helper.RemoveUsePillCallback()
 end
 table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemoveUsePillCallback)
 
-function CustomHealthAPI.Mod:UsePillCallback(pill, player, useflags)
+function CustomHealthAPI.Mod:UsePillCallback(pill, player, useflags, pillColour)
 	if player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B then
 		if player:GetOtherTwin() ~= nil then
 			return CustomHealthAPI.Mod:UsePillCallback(pill, player:GetOtherTwin(), useflags)
@@ -88,7 +105,7 @@ function CustomHealthAPI.Mod:UsePillCallback(pill, player, useflags)
 		return
 	end
 	
-	local doubled = CustomHealthAPI.Helper.IsPlayerUsingHorsePill(player, pill, useflags)
+	local doubled = CustomHealthAPI.Helper.IsPlayerUsingHorsePill(player, pill, useflags, pillColour)
 	if pill == PillEffect.PILLEFFECT_BALLS_OF_STEEL then
 		-- adds two soul hearts
 		local hp = 4
@@ -107,7 +124,7 @@ function CustomHealthAPI.Mod:UsePillCallback(pill, player, useflags)
 	elseif pill == PillEffect.PILLEFFECT_HEALTH_DOWN then
 		-- removes a heart container
 		-- adds a heart container
-		if CustomHealthAPI.Helper.PlayerIsTheForgotten(player) then
+		if CustomHealthAPI.Helper.PlayerIsBoneHeartOnly(player) then
 			local hp = -1
 			if doubled then 
 				hp = hp * 2
@@ -120,11 +137,11 @@ function CustomHealthAPI.Mod:UsePillCallback(pill, player, useflags)
 			end
 			CustomHealthAPI.Helper.UpdateHealthMasks(player, "EMPTY_HEART", hp, false, true)
 		end
-		if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
+		if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
 			if CustomHealthAPI.Helper.PlayerIsBethany(player) then
 				CustomHealthAPI.Helper.UpdateHealthMasks(player, "EMPTY_HEART", 2)
 				CustomHealthAPI.Helper.UpdateHealthMasks(player, "RED_HEART", 1, false, false, false, true, true)
-			elseif CustomHealthAPI.Helper.PlayerIsTheForgotten(player) then
+			elseif CustomHealthAPI.Helper.PlayerIsBoneHeartOnly(player) then
 				CustomHealthAPI.Helper.UpdateHealthMasks(player, "BONE_HEART", 1)
 			else
 				local key = "SOUL_HEART"

@@ -184,7 +184,7 @@ function CustomHealthAPI.Helper.RestrictBrokenHearts(player, limit)
 	local data = player:GetData().CustomHealthAPISavedata
 	local otherMasks = data.OtherHealthMasks
 
-	while CustomHealthAPI.Helper.GetTotalKeys(player, "BROKEN_HEART") > limit do
+	while CustomHealthAPI.Helper.GetTotalKeys(player, "BROKEN_HEART", true) > limit do
 		local lowestPriorityHealth
 		local lowestPriority
 		local maskIndexOfLowestPriority
@@ -219,7 +219,7 @@ function CustomHealthAPI.Helper.RestrictBoneHearts(player)
 	local otherMasks = data.OtherHealthMasks
 
 	while CustomHealthAPI.Helper.GetRoomForOtherKeys(player) < 0 and 
-	      CustomHealthAPI.Helper.GetTotalMaxHP(player) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true) > 0 
+	      CustomHealthAPI.Helper.GetTotalMaxHP(player, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true, true) > 0 
 	do
 		local lowestPriorityHealth
 		local lowestPriority
@@ -258,7 +258,7 @@ function CustomHealthAPI.Helper.RestrictSoulHearts(player)
 	local otherMasks = data.OtherHealthMasks
 
 	while CustomHealthAPI.Helper.GetRoomForOtherKeys(player) < 0 and 
-	      CustomHealthAPI.Helper.GetTotalSoulHP(player, true) > 0 
+	      CustomHealthAPI.Helper.GetTotalSoulHP(player, true, nil, true) > 0 
 	do
 		local lowestPriorityHealth
 		local lowestPriority
@@ -294,7 +294,7 @@ function CustomHealthAPI.Helper.RestrictHeartContainers(player)
 	local otherMasks = data.OtherHealthMasks
 
 	while CustomHealthAPI.Helper.GetRoomForOtherKeys(player) < 0 and 
-	      CustomHealthAPI.Helper.GetTotalMaxHP(player) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true) > 0 
+	      CustomHealthAPI.Helper.GetTotalMaxHP(player, true) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true, true) > 0 
 	do
 		local lowestPriorityHealth
 		local lowestPriority
@@ -332,7 +332,7 @@ function CustomHealthAPI.Helper.RestrictRedHearts(player)
 	local data = player:GetData().CustomHealthAPISavedata
 	local redMasks = data.RedHealthMasks
 	
-	while CustomHealthAPI.Helper.GetTotalRedHP(player, true) > CustomHealthAPI.Helper.GetRedCapacity(player) do
+	while CustomHealthAPI.Helper.GetTotalRedHP(player, true, nil, true) > CustomHealthAPI.Helper.GetRedCapacity(player) do
 		local redMasks = data.RedHealthMasks
 		
 		local lowestPriorityHealth
@@ -450,7 +450,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToForgotten(player, soulCha
 	end
 	
 	-- refund a bone heart if necessary
-	if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
+	if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "BONE_HEART", 1, true, false, true, true)
 	end
 	
@@ -536,7 +536,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToTheSoul(player, soulCharg
 	end
 	
 	-- refund a half soul heart if necessary
-	if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
+	if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "SOUL_HEART", 1, true, false, true, true)
 	end
 	
@@ -578,7 +578,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToBethany(player, soulCharg
 	CustomHealthAPI.Helper.RestrictRedHearts(player)
 	
 	-- refund a full heart container if necessary
-	if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
+	if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "EMPTY_HEART", 2, true, false, true, true)
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "RED_HEART", 2, true, false, true, true)
 	end
@@ -624,7 +624,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToJacobEsau(player, soulCha
 		
 		-- duplicate broken hearts to other twin
 		CustomHealthAPI.Helper.UpdateHealthMasks(twin, "BROKEN_HEART", 
-		                                         CustomHealthAPI.Helper.GetTotalKeys(player, "BROKEN_HEART"), 
+		                                         CustomHealthAPI.Helper.GetTotalKeys(player, "BROKEN_HEART", true), 
 		                                         true, false, true, true)
 		
 		-- for each other mask
@@ -803,7 +803,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToJacobEsau(player, soulCha
 		
 		-- for each red mask
 			-- give half of hearts (starting with lowest priority) to other twin, if odd randomly decide who gets the remainder
-		local redHeartsToTransfer = CustomHealthAPI.Helper.GetTotalRedHP(player, true) / 2
+		local redHeartsToTransfer = CustomHealthAPI.Helper.GetTotalRedHP(player, true, nil, true) / 2
 		if rng:RandomFloat() > 0.5 then
 			redHeartsToTransfer = math.ceil(redHeartsToTransfer)
 		else
@@ -944,12 +944,12 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToJacobEsau(player, soulCha
 		end
 		
 		-- refund a half soul heart to player if necessary
-		if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
+		if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
 			CustomHealthAPI.Helper.UpdateHealthMasks(player, "SOUL_HEART", 1, true, false, true, true)
 		end
 		
 		-- refund a half soul heart to twin if necessary
-		if CustomHealthAPI.Helper.GetTotalHP(twin) == 0 then
+		if CustomHealthAPI.Helper.GetTotalHP(twin, true) == 0 then
 			CustomHealthAPI.Helper.UpdateHealthMasks(twin, "SOUL_HEART", 1, true, false, true, true)
 		end
 		
@@ -1001,7 +1001,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToSoulHpPlayer(player, soul
 	end
 	
 	-- refund a half soul heart if necessary
-	if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
+	if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "SOUL_HEART", 1, true, false, true, true)
 	end
 	
@@ -1027,7 +1027,7 @@ function CustomHealthAPI.Helper.HandleHealthOnConvertToGeneric(player, soulCharg
 	end
 	
 	-- refund a half soul heart if necessary
-	if CustomHealthAPI.Helper.GetTotalHP(player) == 0 then
+	if CustomHealthAPI.Helper.GetTotalHP(player, true) == 0 then
 		CustomHealthAPI.Helper.UpdateHealthMasks(player, "SOUL_HEART", 1, true, false, true, true)
 	end
 	

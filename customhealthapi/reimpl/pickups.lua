@@ -109,7 +109,7 @@ function CustomHealthAPI.Helper.CheckIfRedShouldUseCustomLogic(player, hp)
 		return false
 	elseif CustomHealthAPI.Helper.PlayerIsIgnored(player) then
 		return false
-	elseif CustomHealthAPI.PersistentData.CharactersThatCantHaveRedHealth[player:GetPlayerType()] then
+	elseif CustomHealthAPI.Helper.PlayerIsRedHealthless(player, true) then
 		return false
 	end
 	
@@ -163,7 +163,7 @@ function CustomHealthAPI.Helper.CheckIfRottenShouldUseCustomLogic(player, hp)
 		return false
 	elseif CustomHealthAPI.Helper.PlayerIsIgnored(player) then
 		return false
-	elseif CustomHealthAPI.PersistentData.CharactersThatCantHaveRedHealth[player:GetPlayerType()] then
+	elseif CustomHealthAPI.Helper.PlayerIsRedHealthless(player, true) then
 		return false
 	end
 	
@@ -435,9 +435,7 @@ function CustomHealthAPI.Library.GetSoulHPToBeSpent(p, hpToAdd, heartKey)
 		end
 		
 		return 0
-	elseif playerType == PlayerType.PLAYER_THELOST or playerType == PlayerType.PLAYER_THELOST_B or 
-	       playerType == PlayerType.PLAYER_KEEPER or playerType == PlayerType.PLAYER_KEEPER_B
-	then
+	elseif CustomHealthAPI.Helper.PlayerIsHealthless(player, true) or CustomHealthAPI.Helper.PlayerHasCoinHealth(player) then
 		local numShacklesDisabled = player:GetEffects():GetNullEffectNum(NullItemID.ID_SPIRIT_SHACKLES_DISABLED)
 		local hpSpentReactivatingShackles = math.max(0, maxHpOfSoul * numShacklesDisabled)
 	
@@ -610,6 +608,55 @@ function CustomHealthAPI.Library.AddSoulLocketBonus(pl, locketsToAdd, seed)
 	end
 end
 
+function CustomHealthAPI.Library.IncrementImmaculateConception(pl, amount, seed)
+	if not REPENTOGON or amount <= 0 then
+		return
+	end
+	
+	local player = pl:ToPlayer()
+	if player == nil or not player:HasCollectible(CollectibleType.COLLECTIBLE_IMMACULATE_CONCEPTION) then
+		return
+	end
+
+	local heartsCollected = player:GetImmaculateConceptionState() + amount
+	while heartsCollected >= 15 do
+		local flags = player:GetConceptionFamiliarFlags()
+		local availableFamiliars = {}
+		if flags & ConceptionFamiliarFlag.GUARDIAN_ANGEL ~= ConceptionFamiliarFlag.GUARDIAN_ANGEL then
+			table.insert(availableFamiliars, ConceptionFamiliarFlag.GUARDIAN_ANGEL)
+		end
+		if flags & ConceptionFamiliarFlag.HOLY_WATER ~= ConceptionFamiliarFlag.HOLY_WATER then
+			table.insert(availableFamiliars, ConceptionFamiliarFlag.HOLY_WATER)
+		end
+		if flags & ConceptionFamiliarFlag.RELIC ~= ConceptionFamiliarFlag.RELIC then
+			table.insert(availableFamiliars, ConceptionFamiliarFlag.RELIC)
+		end
+		if flags & ConceptionFamiliarFlag.SWORN_PROTECTOR ~= ConceptionFamiliarFlag.SWORN_PROTECTOR then
+			table.insert(availableFamiliars, ConceptionFamiliarFlag.SWORN_PROTECTOR)
+		end
+		if flags & ConceptionFamiliarFlag.SERAPHIM ~= ConceptionFamiliarFlag.SERAPHIM then
+			table.insert(availableFamiliars, ConceptionFamiliarFlag.SERAPHIM)
+		end
+		if #availableFamiliars > 0 then
+			local rng = RNG()
+			rng:SetSeed(seed, 40)
+			
+			local flag = availableFamiliars[rng:RandomInt(#availableFamiliars) + 1]
+			local continue = Isaac.RunCallback(ModCallbacks.MC_PRE_PLAYER_GIVE_BIRTH_IMMACULATE, player, flag)
+			if continue ~= false then
+				player:SetConceptionFamiliarFlags(flags | flag)
+				player:AddCacheFlags(CacheFlag.CACHE_FAMILIARS, true)
+			end
+		end
+		
+		Isaac.Spawn(5, 10, 3, Game():GetRoom():FindFreePickupSpawnPosition(player.Position), Vector.Zero, player)
+		
+		heartsCollected = heartsCollected - 15
+	end
+	player:SetImmaculateConceptionState(heartsCollected)
+	player:UpdateIsaacPregnancy(false)
+end
+
 function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 	if collider.Type == EntityType.ENTITY_PLAYER then
 		local player = collider:ToPlayer()
@@ -621,11 +668,7 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 		local hasSodomApple = player:HasTrinket(TrinketType.TRINKET_APPLE_OF_SODOM)
 		
 		local data = pickup:GetData()
-		if hearttype < 1 or 
-		   hearttype > 12 or 
-		   player:GetPlayerType() == PlayerType.PLAYER_THELOST or 
-		   player:GetPlayerType() == PlayerType.PLAYER_THELOST_B 
-		then
+		if hearttype < 1 or hearttype > 12 or CustomHealthAPI.Helper.PlayerIsHealthless(player, true) then
 			return
 		elseif player:GetPlayerType() == PlayerType.PLAYER_THESOUL_B and CustomHealthAPI.Helper.IsHoldingTaintedForgotten(player) then
 			return CustomHealthAPI.Mod:HeartCollisionCallback(pickup, player:GetOtherTwin())
@@ -646,9 +689,13 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 			local redHealthBefore = player:GetHearts()
 			local soulHealthBefore = player:GetSoulHearts()
 			
-			if pickup.Price == PickupPrice.PRICE_SPIKES and not data.CHAPIHeartPickupSpentSpikesCostAlready then
+			if pickup.Price == PickupPrice.PRICE_SPIKES and 
+			   not (data.CHAPIHeartPickupSpentSpikesCostAlready or 
+			        player:GetPlayerType() == PlayerType.PLAYER_JACOB2_B or 
+			        player:GetEffects():HasNullEffect(NullItemID.ID_LOST_CURSE))
+			then
 ---@diagnostic disable-next-line: param-type-mismatch
-				local tookDamage = player:TakeDamage(2.0, 268435584, EntityRef(nil), 30)
+				local tookDamage = player:TakeDamage(2.0, DamageFlag.DAMAGE_SPIKES | DamageFlag.DAMAGE_NO_PENALTIES, EntityRef(nil), 30)
 				if not tookDamage then
 					return pickup:IsShopItem()
 				end
@@ -832,6 +879,11 @@ function CustomHealthAPI.Mod:HeartCollisionCallback(pickup, collider)
 			
 			CustomHealthAPI.Library.AddCandyHeartBonus(player, redHealthAfter - redHealthBefore, pickup.InitSeed)
 			CustomHealthAPI.Library.AddSoulLocketBonus(player, soulHealthAfter - soulHealthBefore, pickup.InitSeed)
+			
+			if hearttype ~= HeartSubType.HEART_GOLDEN and hearttype ~= HeartSubType.HEART_BLENDED then
+				-- its clearly an oversight by basegame that these don't work but lol not my problem
+				CustomHealthAPI.Library.IncrementImmaculateConception(collider, 1, pickup.InitSeed)
+			end
 
 			if pickup.OptionsPickupIndex ~= 0 then
 				local pickups = Isaac.FindByType(EntityType.ENTITY_PICKUP)

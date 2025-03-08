@@ -74,6 +74,7 @@ function CustomHealthAPI.Helper.LoadHealthOfPlayerFromBackup(player, healthData)
 	player:GetData().CustomHealthAPIPersistent = healthData["Persist"]
 	
 	if not CustomHealthAPI.Helper.PlayerIsIgnored(player) then
+		CustomHealthAPI.Helper.HandleUnexpectedMax(player)
 		CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 	end
 	

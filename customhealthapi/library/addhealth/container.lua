@@ -74,7 +74,7 @@ function CustomHealthAPI.Helper.TryConvertingContainerHP(player, key)
 	end
 end
 
-function CustomHealthAPI.Helper.TryInsertingContainerHP(player, key, ignoreRoomForOtherKeys)
+function CustomHealthAPI.Helper.TryInsertingContainerHP(player, key, ignoreRoomForOtherKeys, convertedMaxInsertFront)
 	if CustomHealthAPI.Helper.GetRoomForOtherKeys(player) > 0 or ignoreRoomForOtherKeys then
 		local data = player:GetData().CustomHealthAPISavedata
 		local otherMasks = data.OtherHealthMasks
@@ -82,17 +82,18 @@ function CustomHealthAPI.Helper.TryInsertingContainerHP(player, key, ignoreRoomF
 		local keyContainingMask = otherMasks[maskIndex]
 		
 		local maxHP = CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP")
-		if maxHP >= 1 then
-			table.insert(keyContainingMask, {Key = key, HP = 1, HalfCapacity = false})
+		local hp = (maxHP >= 1) and 1 or 0
+		if convertedMaxInsertFront then
+			table.insert(keyContainingMask, 1, {Key = key, HP = hp, HalfCapacity = false})
 		else
-			table.insert(keyContainingMask, {Key = key, HP = 0, HalfCapacity = false})
+			table.insert(keyContainingMask, {Key = key, HP = hp, HalfCapacity = false})
 		end
 	else
 		CustomHealthAPI.Helper.TryConvertingContainerHP(player, key)
 	end
 end
 
-function CustomHealthAPI.Helper.PlusContainerMain(player, key, hp, ignoreRoomForOtherKeys)
+function CustomHealthAPI.Helper.PlusContainerMain(player, key, hp, ignoreRoomForOtherKeys, convertedMaxInsertFront)
 	local maxHP = CustomHealthAPI.Library.GetInfoOfKey(key, "MaxHP")
 	local canHaveHalfCapacity = CustomHealthAPI.PersistentData.HealthDefinitions[key].CanHaveHalfCapacity
 	
@@ -111,9 +112,15 @@ function CustomHealthAPI.Helper.PlusContainerMain(player, key, hp, ignoreRoomFor
 	end
 	
 	while keysToAdd > 0 do
-		CustomHealthAPI.Helper.TryInsertingContainerHP(player, key, ignoreRoomForOtherKeys)
+		CustomHealthAPI.Helper.TryInsertingContainerHP(player, key, ignoreRoomForOtherKeys, convertedMaxInsertFront)
 		keysToAdd = keysToAdd - 1
 		hpToAdd = hpToAdd - hpPer
+	end
+	
+	while CustomHealthAPI.Helper.GetAmountUnoccupiedContainers(player) < 0 do
+		if not CustomHealthAPI.Helper.RemoveLowestPriorityRedKey(player, true) then
+			break
+		end
 	end
 	
 	return math.max(0, hpToAdd)
@@ -327,12 +334,11 @@ function CustomHealthAPI.Helper.MinusContainerMain(player, key, hp, avoidRemovin
 	return math.max(0, hpToRemove) * -1
 end
 
-function CustomHealthAPI.Helper.AddContainerMain(player, key, hp, avoidRemovingBone)
+function CustomHealthAPI.Helper.AddContainerMain(player, key, hp, avoidRemovingBone, convertedMaxInsertFront)
 	if hp > 0 then
-		return CustomHealthAPI.Helper.PlusContainerMain(player, key, hp)
+		return CustomHealthAPI.Helper.PlusContainerMain(player, key, hp, false, convertedMaxInsertFront)
 	elseif hp < 0 then
 		return CustomHealthAPI.Helper.MinusContainerMain(player, key, math.abs(hp), avoidRemovingBone)
 	end
 	return 0
 end
-

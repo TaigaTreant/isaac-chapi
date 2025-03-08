@@ -118,13 +118,14 @@ function CustomHealthAPI.Helper.CheckSubPlayerInfoOfPlayer(player)
 	if CustomHealthAPI.Helper.PlayerIsIgnored(player) then return end
 
 	local data = player:GetData().CustomHealthAPISavedata
-	if player:GetSubPlayer() ~= nil and data.SubPlayerInfo == nil then
+	--[[if player:GetSubPlayer() ~= nil and data.SubPlayerInfo == nil then
 		CustomHealthAPI.Helper.SplitSubPlayerInfo(player)
 	elseif player:GetSubPlayer() == nil and data.SubPlayerInfo ~= nil then
 		CustomHealthAPI.Helper.CollapseSubPlayerInfo(player)
-	end
+	end]]--
 	
-	if player:GetSubPlayer() ~= nil then
+	local subplayer = player:GetSubPlayer()
+	if subplayer ~= nil and subplayer:GetData().CustomHealthAPISavedata ~= nil then
 		CustomHealthAPI.Helper.CheckIfSwapSubPlayerInfo(player)
 	end
 end

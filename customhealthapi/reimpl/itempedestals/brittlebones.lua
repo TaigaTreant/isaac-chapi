@@ -156,12 +156,14 @@ local function getFireRateMultiplier(player)
 	
 	if player:GetData().CustomHealthAPIOtherData then
 		local odata = player:GetData().CustomHealthAPIOtherData
-		if (odata.InHallowAura or 0) > 0 or 
-		   (odata.InHallowDipAura or 0) > 0 or 
-		   (odata.InBethlehemAura or 0) > 0 or
-		   (odata.InHallowSpellAura or 0) > 0
-		then
-			multi = multi * 2.5
+		if not REPENTOGON or CustomHealthAPI.PersistentData.DoManualHallowedGroundChecking then
+			if (odata.InHallowAura or 0) > 0 or 
+			   (odata.InHallowDipAura or 0) > 0 or 
+			   (odata.InBethlehemAura or 0) > 0 or
+			   (odata.InHallowSpellAura or 0) > 0
+			then
+				multi = multi * 2.5
+			end
 		end
 		
 		if player:HasCollectible(CollectibleType.COLLECTIBLE_EPIPHORA) then
@@ -181,11 +183,50 @@ local function getFireRateMultiplier(player)
 		end
 	end
 	
-	-- hallowed ground creep = *2.5 (this is hell to compute)
+	if REPENTOGON and not CustomHealthAPI.PersistentData.DoManualHallowedGroundChecking then
+		if player:GetHallowedGroundCountdown() > 0 then
+			multi = multi * 2.5
+		end
+	end
+	
 	-- fuck the d8 in particular
 	
 	return multi
 end
+
+if REPENTOGON then
+
+if CustomHealthAPI.PersistentData.DoManualHallowedGroundChecking then
+
+function CustomHealthAPI.Helper.AddHallowPoopCallback()
+---@diagnostic disable-next-line: param-type-mismatch
+	Isaac.AddCallback(CustomHealthAPI.Mod, ModCallbacks.MC_PRE_GRID_ENTITY_POOP_UPDATE, CustomHealthAPI.Mod.HallowPoopCallback, -1)
+end
+table.insert(CustomHealthAPI.CallbacksToAdd, CustomHealthAPI.Helper.AddHallowPoopCallback)
+
+function CustomHealthAPI.Helper.RemoveHallowPoopCallback()
+	CustomHealthAPI.Mod:RemoveCallback(ModCallbacks.MC_PRE_GRID_ENTITY_POOP_UPDATE, CustomHealthAPI.Mod.HallowPoopCallback)
+end
+table.insert(CustomHealthAPI.CallbacksToRemove, CustomHealthAPI.Helper.RemoveHallowPoopCallback)
+
+function CustomHealthAPI.Mod:HallowPoopCallback(poop)
+	if poop:GetVariant() == 6 and poop.State ~= 1000 then
+		for i = 0, Game():GetNumPlayers() - 1 do
+			local player = Isaac.GetPlayer(i)
+			
+			player:GetData().CustomHealthAPIOtherData = player:GetData().CustomHealthAPIOtherData or {}
+			local data = player:GetData().CustomHealthAPIOtherData
+	
+			if player.Position:Distance(poop.Position) <= 80.0 then
+				data.InHallowAura = 4
+			end
+		end
+	end
+end
+
+end
+
+else
 
 --yes this shit is now a chapi feature don't @ me
 local cachedHallowPoopIndices = {}
@@ -253,6 +294,10 @@ function CustomHealthAPI.Mod:HallowRoomCallback()
 	lastTimeCachedHallowPoops = nil
 end
 
+end
+
+if not REPENTOGON or CustomHealthAPI.PersistentData.DoManualHallowedGroundChecking then
+
 function CustomHealthAPI.Helper.AddHallowPeffectCallback()
 ---@diagnostic disable-next-line: param-type-mismatch
 	Isaac.AddPriorityCallback(CustomHealthAPI.Mod, ModCallbacks.MC_POST_PEFFECT_UPDATE, CallbackPriority.IMPORTANT, CustomHealthAPI.Mod.HallowPeffectCallback, -1)
@@ -315,6 +360,8 @@ function CustomHealthAPI.Mod:HallowPeffectCallback(player)
 	else
 		data.InHallowSpellAura = math.max((data.InHallowSpellAura or 0) - 1, 0)
 	end
+end
+
 end
 
 function CustomHealthAPI.Helper.AddBrittleBonesCacheCallback()

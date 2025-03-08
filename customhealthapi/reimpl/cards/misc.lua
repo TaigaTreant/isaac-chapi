@@ -29,7 +29,7 @@ function CustomHealthAPI.Mod:UseCardCallback(card, player, useflags)
 		CustomHealthAPI.Helper.UpdateBasegameHealthState(player)
 	elseif card == Card.CARD_HEARTS_2 then
 		-- adds red hp equal to the basegame amount
-		local hp = CustomHealthAPI.Helper.GetTotalRedHP(player, true)
+		local hp = CustomHealthAPI.Helper.GetTotalRedHP(player, true, nil, true)
 		--if doubled then 
 		--	hp = hp * 2
 		--end
@@ -68,7 +68,7 @@ function CustomHealthAPI.Mod:UseCardCallback(card, player, useflags)
 		end
 		
 		for i = 1, times do
-			if math.ceil(CustomHealthAPI.Helper.GetTotalMaxHP(player) / 2) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true) > 0 then
+			if math.ceil(CustomHealthAPI.Helper.GetTotalMaxHP(player, true) / 2) + CustomHealthAPI.Helper.GetTotalBoneHP(player, true, true) > 0 then
 				local hp = -2
 				--if doubled then 
 				--	hp = hp * 2

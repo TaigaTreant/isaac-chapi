@@ -409,7 +409,7 @@ function CustomHealthAPI.Helper.MinusRedMain(player, key, hp)
 	
 	local hpToRemove = hp
 	while hpToRemove > 0 do
-		if CustomHealthAPI.Helper.GetTotalRedHP(player) <= 0 then
+		if CustomHealthAPI.Helper.GetTotalRedHP(player, nil, nil, true) <= 0 then
 			return
 		end
 	
