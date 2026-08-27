@@ -179,7 +179,7 @@ if shouldLoadMod then
 	include(root .. "reimpl.subplayers")
 	include(root .. "reimpl.sumptorium")
 	include(root .. "reimpl.whoreofbabylon")
-	if REPENTOGON then include(root .. "getdatacache") end
+	include(root .. "getdatacache")
 	include(root .. "misc")
 	include(root .. "savingandloading")
 	
