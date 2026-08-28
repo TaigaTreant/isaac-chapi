@@ -79,7 +79,6 @@ GetDataCache.Callbacks = {
 		ID = ModCallbacks.MC_PLAYER_INIT_PRE_LEVEL_INIT_STATS,
 		Priority = -math.huge,
 		Function = _clearCacheCallback,
-		REPENTOGON = true
 	},
 	{
 		ID = ModCallbacks.MC_POST_PLAYER_INIT,
@@ -90,17 +89,13 @@ GetDataCache.Callbacks = {
 
 function GetDataCache:RegisterCallbacks()
 	for _, callback in pairs(self.Callbacks) do
-		if callback.REPENTOGON == nil or REPENTOGON and callback.REPENTOGON then
-			self:AddPriorityCallback(callback.ID, callback.Priority, callback.Function)
-		end
+		self:AddPriorityCallback(callback.ID, callback.Priority, callback.Function)
 	end
 end
 
 function GetDataCache:UnregisterCallbacks()
 	for _, callback in pairs(self.Callbacks) do
-		if callback.REPENTOGON == nil or REPENTOGON and callback.REPENTOGON then
-			self:RemoveCallback(callback.ID, callback.Function)
-		end
+		self:RemoveCallback(callback.ID, callback.Function)
 	end
 end
 
