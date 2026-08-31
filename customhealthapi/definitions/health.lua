@@ -257,7 +257,7 @@ CustomHealthAPI.Library.RegisterAfterHealthIcon("HOLY_MANTLE",
 		for i = math.min(#mantlesToRender, numMantlesToRender), 1, -1 do
 			local filename = mantlesToRender[i].Filename
 			local animname = mantlesToRender[i].Animname
-			local color = renderInfo.Color or Color()
+			local color = renderInfo.Color or Color(1, 1, 1)
 			color.A = ((renderInfo.Color and renderInfo.Color.A) or 1) / i
 			local scale = renderInfo.Scale or Vector.One
 			local flip = renderInfo.Flip

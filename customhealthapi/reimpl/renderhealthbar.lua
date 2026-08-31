@@ -441,7 +441,7 @@ function CustomHealthAPI.Helper.GetHealthColor(healthDefinition, hasRedHealth, r
 	local shouldSoulFlash = data ~= nil and data.SoulFlash ~= nil and data.SoulFlash > 0
 	
 	local A = (CustomHealthAPI.Helper.CheckFadedHealth(player, isSubPlayer) and 0.3) or 1.0
-	local healthcolor = Color.Lerp(color or Color(), color or Color(), 1)
+	local healthcolor = Color.Lerp(color or Color(1, 1, 1), color or Color(1, 1, 1), 1)
 	if CustomHealthAPI.Helper.CheckDangerHealth(player, isSubPlayer) then
 		if healthSlot == 1 then
 			healthcolor.RO = math.max(0, ((Game():GetFrameCount() % 45) - 9) / 9 * -1)
@@ -1029,7 +1029,7 @@ function CustomHealthAPI.Helper.RenderCustomHealthOfPlayer(player, playerSlot, i
 				end
 				local A = (CustomHealthAPI.Helper.CheckFadedHealth(player, isSubPlayer) and 0.3) or 1.0
 				local leaking = CustomHealthAPI.Helper.CheckLeakingHealth(overlayDef, healthToRender[i].RenderInfo.RedHealth ~= nil, player, healthToRender[i].RedHealthIndex)
-				local healthcolor = ((leaking and CustomHealthAPI.Helper.GetLeakingHealthColor(A)) or Color()) * (color or Color())
+				local healthcolor = ((leaking and CustomHealthAPI.Helper.GetLeakingHealthColor(A)) or Color(1, 1, 1)) * (color or Color(1, 1, 1))
 				healthcolor.A = A * ((color and color.A) or 1)
 				
 				local healthIndex = i - 1 + indexOffset
@@ -1995,7 +1995,7 @@ function CustomHealthAPI.Helper.RenderPlayerHPBar(truePlayer, playerSlot, render
 	local playerSlot = playerSlot
 	local renderOffset = renderOffset or Vector.Zero
 	local scale = scale or Vector.One
-	local color = color or Color()
+	local color = color or Color(1, 1, 1)
 	if not hasUnknownCurse then
 		local prevent = nil
 		CustomHealthAPI.PersistentData.PreventResyncing = CustomHealthAPI.PersistentData.PreventResyncing + 1
